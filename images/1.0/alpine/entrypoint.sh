@@ -1,6 +1,6 @@
 #!/bin/sh
 ##
-##    Docker image for __app_name__.
+##    Docker image for Mattermost-LDAP.
 ##    Copyright (C) 2020  Monogramm
 ##
 set -e
@@ -97,7 +97,7 @@ wait_for_services() {
 
 # display help
 print_help() {
-    echo "Monogramm Docker entrypoint for __app_name__.
+    echo "Monogramm Docker entrypoint for Mattermost-LDAP.
 
 Usage:
 docker exec  <option> [arguments]
