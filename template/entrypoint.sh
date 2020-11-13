@@ -111,6 +111,51 @@ init() {
 start() {
     init
 
+
+    # Install server Oauth
+    cp -r /opt/Mattermost-LDAP/oauth/ /var/www/html/
+    # Get config file
+    cp /var/www/html/oauth/config_db.php.example /var/www/html/oauth/config_db.php; cp /var/www/html/oauth/LDAP/config_ldap.php.example /var/www/html/oauth/LDAP/config_ldap.php
+    rm /var/www/html/oauth/config_db.php.example; rm /var/www/html/oauth/LDAP/config_ldap.php.example
+
+    # Update the config_db.php file
+    sed -i \
+        -e "s|\$db_name	  = getenv\(\'db_name\'\) \?: \"oauth_db\";|\$db_name	  = getenv\(\'MATTERMOST-LDAP_DB_NAME\'\) \?: \"mattermost-ldap_db_name\";|g" \
+        -e "s|\$db_user	  = getenv\(\'db_user\'\) \?: \"oauth_db\";|\$db_user	  = getenv\(\'MATTERMOST-LDAP_DB_USER\'\) \?: \"mattermost-ldap_db_user\";|g" \
+        -e "s|\$db_pass	  = getenv\(\'db_pass\'\) \?: \"oauth_db\";|\$db_name	  = getenv\(\'MATTERMOST-LDAP_DB_PASSWD\'\) \?: \"mattermost-ldap_db_passwd\";|g" \
+        -e "s|\/\/date_default_timezone_set \(\'Europe/Paris\'\);|date_default_timezone_set \(\'Europe/Paris\'\);|g" \
+        /var/www/html/oauth/config_db.php
+    
+    # [TODO] if mattermostldap db is postgresql
+    sed -i \
+        -e "s|\$db_type	  = getenv\(\'db_type\'\) \?: \"oauth_db\";|\$db_type	  = \"pgsql\";|g" \
+        -e "s|\$db_port	  = getenv\(\'db_port\'\) \?: \"oauth_db\";|\$db_port	  = 5432;|g" \
+        -e "s|\$db_host	  = getenv\(\'db_host\'\) \?: \"oauth_db\";|\$db_host	  = \"127.0.0.1\";|g" \
+        /var/www/html/oauth/config_db.php
+    # fi
+    # [TODO] elif mattermostldap db is mariadb
+    sed -i \
+        -e "s|\$db_type	  = getenv\(\'db_type\'\) \?: \"oauth_db\";|\$db_type	  = \"mysql\";|g" \
+        -e "s|\$db_port	  = getenv\(\'db_port\'\) \?: \"oauth_db\";|\$db_port	  = 3306;|g" \
+        -e "s|\$db_host	  = getenv\(\'db_host\'\) \?: \"oauth_db\";|\$db_host	  = \"127.0.0.1\";|g" \
+        /var/www/html/oauth/config_db.php
+    # fi
+
+
+    # Update the config_ldap.php file
+    sed -i \
+        -e "s|\$ldap_host = getenv\(\'ldap_host\'\) \?: \"ldap:\/\/ldap\.company\.com\/\";|\$ldap_host	  = getenv\(\'LDAP_HOST\'\) \?: \"ldap:\/\/openldap:389/\";|g" \
+        -e "s|\$ldap_port = intval\(getenv\(\'ldap_port\'\)\) \?: 389;|\$ldap_port	  = getenv\(\'LDAP_PORT\'\) \?: 389;|g" \
+        -e "s|\$ldap_version = intval\(getenv\(\'ldap_version\'\)\) \?: 3;|\$ldap_version = intval\(getenv\(\'LDAP_VERSION\'\)\) \?: 3;|g" \
+        -e "s|\$ldap_start_tls = boolval\(getenv\(\'ldap_start_tls\'\)\) \?: false;|\$ldap_start_tls = boolval\(getenv\(\'LDAP_START_TLS\'\)\) \?: true;|g" \
+        -e "s|\$ldap_search_attribute = getenv\(\'ldap_search_attribute\'\) \?: \"uid\";|\$ldap_search_attribute = getenv\(\'LDAP_SEARCH_ATTRIBUTE\'\) \?: \"uid\";|g" \
+        -e "s|\$ldap_base_dn = getenv\(\'ldap_base_dn\'\) \?: \"ou=People,o=Company\";|\$ldap_base_dn = getenv\(\'LDAP_BASE_DN\'\) \?: \"ou=People,o=Company\";|g" \
+        -e "s|\$ldap_filter = getenv\(\'ldap_filter\'\) \?: \"\(objectClass=\*\)\";|\$ldap_filter = getenv\(\'LDAP_FILTER\'\) \?: \"\(objectClass=\*\)\";|g" \
+        -e "s|\$ldap_bind_dn = getenv\(\'ldap_bind_dn\'\) \?: \"\";|\$ldap_bind_dn = getenv\(\'LDAP_BIND_DN\'\) \?: \"\";|g" \
+        -e "s|\$ldap_bind_pass = getenv\(\'ldap_bind_pass\'\) \?: \"\";|\$ldap_bind_pass = getenv\(\'LDAP_BIND_PASS\'\) \?: \"\";|g" \
+        /var/www/html/oauth/config_ldap.php
+
+
     echo "[TODO] Start main service"
 }
 
