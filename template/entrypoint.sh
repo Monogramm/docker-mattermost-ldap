@@ -134,11 +134,11 @@ start() {
         /var/www/html/oauth/config_db.php
     # fi
     # [TODO] elif mattermostldap db is mariadb
-    sed -i \
-        -e "s|\$db_type	  = getenv\(\'db_type\'\) \?: \"oauth_db\";|\$db_type	  = \"mysql\";|g" \
-        -e "s|\$db_port	  = getenv\(\'db_port\'\) \?: \"oauth_db\";|\$db_port	  = 3306;|g" \
-        -e "s|\$db_host	  = getenv\(\'db_host\'\) \?: \"oauth_db\";|\$db_host	  = \"127.0.0.1\";|g" \
-        /var/www/html/oauth/config_db.php
+    #sed -i \
+    #    -e "s|\$db_type	  = getenv\(\'db_type\'\) \?: \"oauth_db\";|\$db_type	  = \"mysql\";|g" \
+    #    -e "s|\$db_port	  = getenv\(\'db_port\'\) \?: \"oauth_db\";|\$db_port	  = 3306;|g" \
+    #    -e "s|\$db_host	  = getenv\(\'db_host\'\) \?: \"oauth_db\";|\$db_host	  = \"127.0.0.1\";|g" \
+    #    /var/www/html/oauth/config_db.php
     # fi
 
 

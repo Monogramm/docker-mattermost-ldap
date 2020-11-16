@@ -49,8 +49,8 @@ services:
       - "80:80"
       - "443:443"
     networks:
+      - default
       - mattermost-ldap_internal_network
-      - mattermost-ldap_external_network
     volumes:
       - $MATTERMOST-LDAP_HOME/html:/var/www/html
       - /etc/localtime:/etc/localtime:ro
@@ -143,7 +143,7 @@ services:
     hostname: mattermost.${DOMAIN}
     container_name: mattermost
     networks:
-      - mattermost_external_network
+      - default
       - mattermost_internal_network
     #restart: unless-stopped
     depends_on:
@@ -185,6 +185,8 @@ services:
     image: sj26/mailcatcher:latest
     hostname: mailer
     container_name: mailer
+    networks:
+      - default
     restart: always
     expose:
       - 1025
@@ -202,6 +204,8 @@ services:
   #hostname: "ldap.${DOMAIN}" # important: same as domainname and LDAP_DOMAIN
   #domainname: "ldap.${DOMAIN}"
   container_name: openldap
+  networks:
+    - default
   #restart: always
   ports:
     - "389:389"

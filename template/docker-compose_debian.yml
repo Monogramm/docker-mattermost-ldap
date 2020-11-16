@@ -47,7 +47,7 @@ services:
       - "443:443"
     networks:
       - mattermost-ldap_internal_network
-      - mattermost-ldap_external_network
+      - default
     volumes:
       - $MATTERMOST-LDAP_HOME/html:/var/www/html
       - /etc/localtime:/etc/localtime:ro
@@ -74,6 +74,8 @@ services:
     container_name: mattermost-ldap-db
     restart: always
     command: --character_set_client=utf8 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --character-set-client-handshake=FALSE
+    networks:
+      - mattermostldap_internal_network
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "${MATTERMOST-LDAP_DB_USER}", "-d", "${MATTERMOST-LDAP_DB_NAME}"]
       timeout: 10s
@@ -101,6 +103,35 @@ services:
     # - GRANT_TYPES="authorization_code"
     # - SCOPE="api"
     # - USER_ID=""
+
+#################################
+# Maria DB container in case of #
+#################################
+
+  mattermost-ldap-db:
+    image: mariadb:10
+    container_name: mattermost-ldap-db
+    restart: always
+    command: --character_set_client=utf8 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --character-set-client-handshake=FALSE
+    networks:
+      - mattermostldap_internal_network
+    #restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 10s
+      retries: 5
+    expose:
+      - '3306'
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MATTERMOST_LDAP_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MATTERMOST_LDAP_MARIADB_DATABASE}
+      - MYSQL_USER=${MATTERMOST_LDAP_MARIADB_USER}
+      - MYSQL_PASSWORD=${MATTERMOST_LDAP_MARIADB_PASSWORD}
+    volumes:
+      - /srv/mattermost/ldap/db/data:/var/lib/mysql
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+
 
 # TODO Add the mattermost, mattermost-db, openldap and mailer containers
 
@@ -139,7 +170,7 @@ services:
     hostname: mattermost.${DOMAIN}
     container_name: mattermost
     networks:
-      - mattermost_external_network
+      - default
       - mattermost_internal_network
     #restart: unless-stopped
     depends_on:
@@ -182,6 +213,8 @@ services:
     hostname: mailer
     container_name: mailer
     restart: always
+    networks:
+      - default
     expose:
       - 1025
     ports:
@@ -198,6 +231,8 @@ openldap:
   #hostname: "ldap.${DOMAIN}" # important: same as domainname and LDAP_DOMAIN
   #domainname: "ldap.${DOMAIN}"
   container_name: openldap
+  networks:
+    - default
   #restart: always
   ports:
     - "389:389"
