@@ -1,8 +1,8 @@
 version: "2.3"
 
 networks:
-  MATTERMOST-LDAP_external_network:
-  MATTERMOST-LDAP_internal_network:
+  MATTERMOST_LDAP_external_network:
+  MATTERMOST_LDAP_internal_network:
     internal: true
 
 services:
@@ -19,7 +19,7 @@ services:
       mattermost-ldap-nginx:
         condition: service_started
     networks:
-      - MATTERMOST-LDAP_internal_network
+      - MATTERMOST_LDAP_internal_network
     volumes_from:
       - mattermost-ldap
     volumes:
@@ -49,17 +49,17 @@ services:
     #ports:
     #  - "9000:9000"
     networks:
-      - MATTERMOST-LDAP_internal_network
+      - MATTERMOST_LDAP_internal_network
     volumes:
-      - $MATTERMOST-LDAP_HOME/html:/var/www/html
+      - $HOME/html:/var/www/html
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
     environment:
-      - MATTERMOST-LDAP_DB_TYPE=pgsql
-      - MATTERMOST-LDAP_DB_HOST=$mattermost-ldap-db
-      - MATTERMOST-LDAP_DB_NAME=$MATTERMOST-LDAP_DB_NAME
-      - MATTERMOST-LDAP_DB_USER=$MATTERMOST-LDAP_DB_USER
-      - MATTERMOST-LDAP_DB_PASSWORD=$MATTERMOST-LDAP_DB_PASSWD
+      - MATTERMOST_LDAP_DB_TYPE=pgsql
+      - MATTERMOST_LDAP_DB_HOST=$mattermost-ldap-db
+      - DB_NAME=$DB_NAME
+      - DB_USER=$DB_USER
+      - MATTERMOST_LDAP_DB_PASSWORD=$DB_PASS
 
   mattermost-ldap-db:
     image: postgres:latest
@@ -68,17 +68,17 @@ services:
     #ports:
     #  - "5432:5432"
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "${MATTERMOST-LDAP_DB_USER}", "-d", "${MATTERMOST-LDAP_DB_NAME}"]
+      test: ["CMD", "pg_isready", "-U", "${DB_USER}", "-d", "${DB_NAME}"]
     networks:
-      - MATTERMOST-LDAP_internal_network
+      - MATTERMOST_LDAP_internal_network
     volumes:
-      - $MATTERMOST-LDAP_HOME/db:/var/lib/postgresql/data
+      - $HOME/db:/var/lib/postgresql/data
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
     environment:
-      - POSTGRES_DB=$MATTERMOST-LDAP_DB_NAME
-      - POSTGRES_USER=$MATTERMOST-LDAP_DB_USER
-      - POSTGRES_PASSWORD=$MATTERMOST-LDAP_DB_PASSWD
+      - POSTGRES_DB=$DB_NAME
+      - POSTGRES_USER=$DB_USER
+      - POSTGRES_PASSWORD=$DB_PASS
 
   mattermost-ldap-nginx:
     image: nginx:latest
@@ -89,15 +89,15 @@ services:
       # If you need SSL connection
       # - "443:443"
     networks:
-      - MATTERMOST-LDAP_internal_network
-      - MATTERMOST-LDAP_external_network
+      - MATTERMOST_LDAP_internal_network
+      - MATTERMOST_LDAP_external_network
     depends_on:
       mattermost-ldap:
         condition: service_started
     links:
       - mattermost-ldap
     volumes:
-      - $MATTERMOST-LDAP_HOME/html:/var/www/html
+      - $HOME/html:/var/www/html
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
       # TODO Provide a custom nginx conf

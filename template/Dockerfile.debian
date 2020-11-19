@@ -5,6 +5,7 @@ FROM php:apache
 RUN set -ex; \
     apt-get update; \
     apt-get install -y libpq-dev libldap2-dev git; \
+    apt-get install rsync; \
     rm -rf /var/lib/apt/lists/*; \
     docker-php-ext-configure pgsql --with-pgsql=/usr/local/pgsql; \
     docker-php-ext-install pdo pdo_pgsql pgsql; \
@@ -13,7 +14,7 @@ RUN set -ex; \
     ln -s /usr/local/etc/php/php.ini-production /usr/local/etc/php/php.ini;
 
 # Open and expose port 80 for Apache server
-EXPOSE 80
+# EXPOSE 80
 
 COPY ./entrypoint.sh /
 
@@ -23,7 +24,8 @@ CMD ["--help"]
 # Arguments to label built container
 ARG VCS_REF
 ARG BUILD_DATE
-ARG VERSION=%%VERSION%%
+ARG VERSION=master
+# %%VERSION%%
 
 # Get Mattermost-LDAP project
 ADD https://github.com/crivaledaz/Mattermost-LDAP/archive/${VERSION}.tar.gz /tmp/${VERSION}.tar.gz
@@ -31,11 +33,10 @@ ADD https://github.com/crivaledaz/Mattermost-LDAP/archive/${VERSION}.tar.gz /tmp
 # Decompress the tar.gz to the right location.
 # Keep track of image version
 RUN set -ex; \
-    mkdir -p /tmp/Mattermost-LDAP; \
-    tar zxvf /tmp/${VERSION}.tar.gz -C /tmp/Mattermost-LDAP; \
-    rm ${VERSION}.tar.gz; \
-    mkdir -p /opt/Mattermost-LDAP; \
-    cp -r "/tmp/Mattermost-LDAP/${VERSION}"/* /opt/Mattermost-LDAP; \
+    mkdir -p /tmp/Mattermost-LDAP/; \
+    tar zxvf /tmp/${VERSION}.tar.gz -C /tmp/Mattermost-LDAP/; \
+    mkdir -p /opt/Mattermost-LDAP/; \
+    cp -r "/tmp/Mattermost-LDAP/Mattermost-LDAP-${VERSION}"/* /opt/Mattermost-LDAP/; \
     rm -rf /tmp/Mattermost-LDAP; \
     echo "${VERSION} ${VCS_REF} ${BUILD_DATE}" > '/opt/Mattermost-LDAP/oauth/.docker-version';
 

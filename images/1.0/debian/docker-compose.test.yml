@@ -1,8 +1,8 @@
 version: "2.3"
 
 networks:
-  MATTERMOST-LDAP_external_network:
-  MATTERMOST-LDAP_internal_network:
+  MATTERMOST_LDAP_external_network:
+  MATTERMOST_LDAP_internal_network:
     internal: true
 
 services:
@@ -17,7 +17,7 @@ services:
       mattermost-ldap:
         condition: service_started
     networks:
-      - MATTERMOST-LDAP_internal_network
+      - MATTERMOST_LDAP_internal_network
     volumes_from:
       - mattermost-ldap
     volumes:
@@ -47,18 +47,18 @@ services:
     ports:
       - "80:80"
     networks:
-      - MATTERMOST-LDAP_internal_network
-      - MATTERMOST-LDAP_external_network
+      - MATTERMOST_LDAP_internal_network
+      - MATTERMOST_LDAP_external_network
     volumes:
-      - $MATTERMOST-LDAP_HOME/html:/var/www/html
+      - $HOME/html:/var/www/html
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
     environment:
-      - MATTERMOST-LDAP_DB_TYPE=mysql
-      - MATTERMOST-LDAP_DB_HOST=$mattermost-ldap-db
-      - MATTERMOST-LDAP_DB_NAME=$MATTERMOST-LDAP_DB_NAME
-      - MATTERMOST-LDAP_DB_USER=$MATTERMOST-LDAP_DB_USER
-      - MATTERMOST-LDAP_DB_PASSWORD=$MATTERMOST-LDAP_DB_PASSWD
+      - MATTERMOST_LDAP_DB_TYPE=mysql
+      - MATTERMOST_LDAP_DB_HOST=$mattermost-ldap-db
+      - DB_NAME=$DB_NAME
+      - DB_USER=$DB_USER
+      - MATTERMOST_LDAP_DB_PASSWORD=$DB_PASS
 
   mattermost-ldap-db:
     image: mariadb:latest
@@ -66,7 +66,7 @@ services:
     restart: always
     command: --character_set_client=utf8 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --character-set-client-handshake=FALSE
     healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "--password=${$MATTERMOST-LDAP_DB_ROOT_PASSWD}"]
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "--password=${$DB_ROOT_PASSWD}"]
       timeout: 10s
       retries: 5
     expose:
@@ -74,13 +74,13 @@ services:
     #ports:
     #  - "3306:3306"
     networks:
-      - MATTERMOST-LDAP_internal_network
+      - MATTERMOST_LDAP_internal_network
     volumes:
-      - $MATTERMOST-LDAP_HOME/db:/var/lib/mysql
+      - $HOME/db:/var/lib/mysql
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
     environment:
-      - MYSQL_ROOT_PASSWORD=$MATTERMOST-LDAP_DB_ROOT_PASSWD
-      - MYSQL_DATABASE=$MATTERMOST-LDAP_DB_NAME
-      - MYSQL_USER=$MATTERMOST-LDAP_DB_USER
-      - MYSQL_PASSWORD=$MATTERMOST-LDAP_DB_PASSWD
+      - MYSQL_ROOT_PASSWORD=$DB_ROOT_PASSWD
+      - MYSQL_DATABASE=$DB_NAME
+      - MYSQL_USER=$DB_USER
+      - MYSQL_PASSWORD=$DB_PASS

@@ -52,7 +52,7 @@ services:
       - default
       - mattermost-ldap_internal_network
     volumes:
-      - $MATTERMOST-LDAP_HOME/html:/var/www/html
+      - $HOME/html:/var/www/html
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
     environment:
@@ -65,20 +65,23 @@ services:
       - LDAP_FILTER="(objectClass=*)"
       - LDAP_BIND_DN=""
       - LDAP_BIND_PASS=""
-      - MATTERMOST-LDAP_DB_HOST="127.0.0.1"
-      - MATTERMOST-LDAP_DB_PORT="5432"
-      - MATTERMOST-LDAP_DB_TYPE="pgsql"
-      - MATTERMOST-LDAP_DB_NAME=$MATTERMOST-LDAP_DB_NAME
-      - MATTERMOST-LDAP_DB_USER=$MATTERMOST-LDAP_DB_USER
-      - MATTERMOST-LDAP_DB_PASS=$MATTERMOST-LDAP_DB_PASSWD
+      - MATTERMOST_LDAP_DB_HOST="127.0.0.1"
+      - MATTERMOST_LDAP_DB_PORT="5432"
+      - MATTERMOST_LDAP_DB_TYPE="pgsql"
+      - DB_NAME=$DB_NAME
+      - DB_USER=$DB_USER
+      - MATTERMOST_LDAP_DB_PASS=$DB_PASS
 
+# Use postgres for alpine
   mattermost-ldap-db:
-    image: postgres:alpine
+    image: postgres:latest
     container_name: mattermost-ldap-db
     restart: always
     command: --character_set_client=utf8 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --character-set-client-handshake=FALSE
+    networks:
+      - mattermostldap_internal_network
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "${MATTERMOST-LDAP_DB_USER}", "-d", "${MATTERMOST-LDAP_DB_NAME}"]
+      test: ["CMD", "pg_isready", "-U", "${DB_USER}", "-d", "${DB_NAME}"]
       timeout: 10s
       retries: 5
     expose:
@@ -87,23 +90,14 @@ services:
     #  - "5432:5432"
     networks:
       - mattermost-ldap_internal_network
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
     volumes:
-      - ${MATTERMOST-LDAP_HOME}/db:/var/lib/postgresql/data
+      - ${HOME}/db:/var/lib/postgresql/data
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
-    environment:
-      - POSTGRES_DB=${MATTERMOST-LDAP_DB_NAME}
-      - POSTGRES_USER=${MATTERMOST-LDAP_DB_USER}
-      - POSTGRES_PASSWORD=${MATTERMOST-LDAP_DB_PWD}
-      - POSTGRES_HOST_AUTH_METHOD=trust
-      - POSTGRES_DB_HOST="127.0.0.1"
-      - POSTGRES_DB_PORT="5432"
-      - CLIENT_ID=123456789abcdef123456789abcdef
-      - CLIENT_SECRET=fedcba987654321fedcba987654321
-      - REDIRECT_URI="http://localhost/signup/gitlab/complete"
-      - GRANT_TYPES="authorization_code"
-      - SCOPE="api"
-      - USER_ID=""
 
 
 # TODO Add the mattermost, mattermost-db, openldap and mailer containers

@@ -4,7 +4,7 @@ Template variables to replace in ALL files:
 * Mattermost-LDAP: Name of the application
 * Monogramm: GitHub Owner of the original application
 * mattermost-ldap: GitHub slug of the original application
-* MATTERMOST-LDAP: Uppercase value of the GitHub slug
+* MATTERMOST_LDAP: Uppercase value of the GitHub slug
 * Custome image for mattermost-ldap.: Application description
 * https://mattermost.com/: Application URL
 * Mattermost: Name of the Application vendor

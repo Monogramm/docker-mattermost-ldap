@@ -1,8 +1,10 @@
 version: "2.3"
 
 networks:
-  mattermost-ldap_external_network:
+  default:
   mattermost-ldap_internal_network:
+    internal: true
+  mattermost_internal_network:
     internal: true
 
 services:
@@ -28,7 +30,7 @@ services:
     # For development or CI, tag build from local Dockerfile
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.debian
       args: 
         - TAG=${TAG}
         - VCS_REF=${VCS_REF}
@@ -43,97 +45,55 @@ services:
     links:
       - mattermost-ldap-db
     ports:
-      - "80:80"
+      - "8080:8080"
       - "443:443"
     networks:
       - mattermost-ldap_internal_network
       - default
-    volumes:
-      - $MATTERMOST-LDAP_HOME/html:/var/www/html
-      - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
     environment:
       - LDAP_HOST=$LDAP_HOST
       - LDAP_PORT=$LDAP_PORT
       - LDAP_VERSION=$LDAP_VERSION
-      # - LDAP_START_TLS=$LDAP_START_TLS
+      - LDAP_START_TLS=$LDAP_START_TLS
       - LDAP_SEARCH_ATTRIBUTE=$LDAP_SEARCH_ATTRIBUTE
       - LDAP_BASE_DN=$LDAP_BASE_DN
       - LDAP_FILTER=$LDAP_FILTER
       - LDAP_BIND_DN=$LDAP_BIND_DN
       - LDAP_BIND_PASS=$LDAP_BIND_PASS
-      - MATTERMOST-LDAP_DB_HOST="127.0.0.1"
-      - MATTERMOST-LDAP_DB_PORT="5432"
-      - MATTERMOST-LDAP_DB_TYPE="pgsql"
-      - MATTERMOST-LDAP_DB_NAME=$MATTERMOST-LDAP_DB_NAME
-      - MATTERMOST-LDAP_DB_USER=$MATTERMOST-LDAP_DB_USER
-      - MATTERMOST-LDAP_DB_PASS=$MATTERMOST-LDAP_DB_PASSWD
-
-  mattermost-ldap-db:
-    image: postgres:debian
-    container_name: mattermost-ldap-db
-    restart: always
-    command: --character_set_client=utf8 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --character-set-client-handshake=FALSE
-    networks:
-      - mattermostldap_internal_network
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "${MATTERMOST-LDAP_DB_USER}", "-d", "${MATTERMOST-LDAP_DB_NAME}"]
-      timeout: 10s
-      retries: 5
-    expose:
-      - '5432'
-    #ports:
-    #  - "5432:5432"
-    networks:
-      - mattermost-ldap_internal_network
+      - DB_HOST="127.0.0.1"
+      - DB_PORT="3306"
+      - DB_TYPE="mysqli"
+      - DB_NAME=$DB_NAME
+      - DB_USER=$DB_USER
+      - DB_PASS=$DB_PASS
     volumes:
-      - ${MATTERMOST-LDAP_HOME}/db:/var/lib/postgresql/data
+      - $HOME/html:/var/www/html
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
-    environment:
-      - POSTGRES_DB=${MATTERMOST-LDAP_DB_NAME}
-      - POSTGRES_USER=${MATTERMOST-LDAP_DB_USER}
-      - POSTGRES_PASSWORD=${MATTERMOST-LDAP_DB_PWD}
-    # - POSTGRES_HOST_AUTH_METHOD=trust
-    # - POSTGRES_DB_HOST="127.0.0.1"
-    # - POSTGRES_DB_PORT="5432"
-    # - CLIENT_ID=123456789abcdef123456789abcdef
-    # - CLIENT_SECRET=fedcba987654321fedcba987654321
-    # - REDIRECT_URI="http://localhost/signup/gitlab/complete"
-    # - GRANT_TYPES="authorization_code"
-    # - SCOPE="api"
-    # - USER_ID=""
 
-#################################
-# Maria DB container in case of #
-#################################
-
+# Use mariadb for debian
   mattermost-ldap-db:
-    image: mariadb:10
+    image: mariadb:latest
     container_name: mattermost-ldap-db
     restart: always
     command: --character_set_client=utf8 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --character-set-client-handshake=FALSE
     networks:
-      - mattermostldap_internal_network
-    #restart: unless-stopped
+      - mattermost-ldap_internal_network
     healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "--password=${DB_ROOT_PASSWD}","ping", "-h", "localhost"]
       timeout: 10s
       retries: 5
     expose:
       - '3306'
     environment:
-      - MYSQL_ROOT_PASSWORD=${MATTERMOST_LDAP_ROOT_PASSWORD}
-      - MYSQL_DATABASE=${MATTERMOST_LDAP_MARIADB_DATABASE}
-      - MYSQL_USER=${MATTERMOST_LDAP_MARIADB_USER}
-      - MYSQL_PASSWORD=${MATTERMOST_LDAP_MARIADB_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWD}
+      - MYSQL_DATABASE=${DB_NAME}
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PASSWORD=${DB_PASS}
     volumes:
-      - /srv/mattermost/ldap/db/data:/var/lib/mysql
+      - ${HOME}/db/mysql:/var/lib/mysql
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
-
-
-# TODO Add the mattermost, mattermost-db, openldap and mailer containers
 
   mattermostdb:
     image: mattermost/mattermost-prod-db:5.28.1
@@ -219,65 +179,63 @@ services:
       - 1025
     ports:
       - "1080:1080"
-    networks:
-      - external_network
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
 
-# LDAP
-openldap:
-  image: monogramm/docker-openldap:1.1.11
-  #hostname: "ldap.${DOMAIN}" # important: same as domainname and LDAP_DOMAIN
-  #domainname: "ldap.${DOMAIN}"
-  container_name: openldap
-  networks:
-    - default
-  #restart: always
-  ports:
-    - "389:389"
-    - "636:636"
-  environment:
-    BOOTSTRAP: "true"
-    LDAP_LOG_LEVEL: "256"
-    LDAP_ORGANISATION: "${COMPANY_NAME}"
-    HOSTNAME: "ldap.${DOMAIN}" # important: same as domainname and LDAP_DOMAIN
-    LDAP_DOMAIN: "ldap.${DOMAIN}"
-    LDAP_BASE_DN: "${LDAP_BASE}"
-    LDAP_ADMIN_PASSWORD: "${LDAP_ADMIN_PWD}"
-    LDAP_CONFIG_PASSWORD: "${LDAP_CONFIG_PASSWORD}"
-    LDAP_READONLY_USER: "false"
-    #LDAP_READONLY_USER_USERNAME: "readonly"
-    #LDAP_READONLY_USER_PASSWORD: "readonly"
-    LDAP_RFC2307BIS_SCHEMA: "false"
-    LDAP_BACKEND: "${LDAP_BACKEND}"
-    LDAP_TLS: "true"
-    LDAP_TLS_CRT_FILENAME: "cert.pem"
-    LDAP_TLS_KEY_FILENAME: "privkey.pem"
-    LDAP_TLS_CA_CRT_FILENAME: "fullchain.pem"
-    LDAP_TLS_ENFORCE: "true"
-    LDAP_TLS_CIPHER_SUITE: "NORMAL:SECURE256:-VERS-SSL3.0"
-    LDAP_TLS_PROTOCOL_MIN: "3.1"
-    LDAP_TLS_VERIFY_CLIENT: "try"
-    LDAP_REPLICATION: "false"
-    #LDAP_REPLICATION_CONFIG_SYNCPROV: "binddn="cn=admin,cn=config" bindmethod=simple credentials=$LDAP_CONFIG_PASSWORD searchbase="cn=config" type=refreshAndPersist retry="60 +" timeout=1 starttls=critical"
-    #LDAP_REPLICATION_DB_SYNCPROV: "binddn="cn=admin,$LDAP_BASE_DN" bindmethod=simple credentials=$LDAP_ADMIN_PASSWORD searchbase="$LDAP_BASE_DN" type=refreshAndPersist interval=00:00:00:10 retry="60 +" timeout=1 starttls=critical"
-    #LDAP_REPLICATION_HOSTS: "['ldaps://ldap.${DOMAIN}','ldaps://ldap2.${DOMAIN}']"
-    KEEP_EXISTING_CONFIG: "false"
-    LDAP_REMOVE_CONFIG_AFTER_SETUP: "true"
-    LDAP_SSL_HELPER_PREFIX: "ldap"
-  tty: true
-  stdin_open: true
-  command: --copy-service --loglevel warning
-  volumes:
-    - /srv/openldap/lib/ldap/:/var/lib/ldap
-    - /srv/openldap/slapd.d/:/etc/ldap/slapd.d
-    - /srv/openldap/ldif/:/srv/ldif
-    - /etc/localtime:/etc/localtime:ro
-    - /etc/timezone:/etc/timezone:ro
-    - /etc/letsencrypt/live/intranet.${DOMAIN}:/container/service/slapd/assets/certs:ro
-    - /etc/letsencrypt/archive/intranet.${DOMAIN}:/container/service/slapd/archive/intranet.${DOMAIN}:ro
-    - ./services/openldap/ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom
+  # LDAP
+  openldap:
+    image: monogramm/docker-openldap:1.1.11
+    #hostname: "ldap.${DOMAIN}" # important: same as domainname and LDAP_DOMAIN
+    #domainname: "ldap.${DOMAIN}"
+    container_name: openldap
+    networks:
+      - default
+    #restart: always
+    ports:
+      - "389:389"
+      - "636:636"
+    environment:
+      - BOOTSTRAP=true
+      - LDAP_LOG_LEVEL=256
+      - LDAP_ORGANISATION=${COMPANY_NAME}
+      - HOSTNAME=ldap.${DOMAIN} # important: same as domainname and LDAP_DOMAIN
+      - LDAP_DOMAIN=ldap.${DOMAIN}
+      - LDAP_BASE_DN=${LDAP_BASE}
+      - LDAP_ADMIN_PASSWORD=${LDAP_ADMIN_PWD}
+      - LDAP_CONFIG_PASSWORD=${LDAP_CONFIG_PASSWORD}
+      - LDAP_READONLY_USER=false
+      #- LDAP_READONLY_USER_USERNAME=readonly
+      #- LDAP_READONLY_USER_PASSWORD=readonly
+      - LDAP_RFC2307BIS_SCHEMA=false
+      - LDAP_BACKEND=${LDAP_BACKEND}
+      - LDAP_TLS=true
+      - LDAP_TLS_CRT_FILENAME=cert.pem
+      - LDAP_TLS_KEY_FILENAME=privkey.pem
+      - LDAP_TLS_CA_CRT_FILENAME=fullchain.pem
+      - LDAP_TLS_ENFORCE=true
+      - LDAP_TLS_CIPHER_SUITE=NORMAL:SECURE256:-VERS-SSL3.0
+      - LDAP_TLS_PROTOCOL_MIN=3.1
+      - LDAP_TLS_VERIFY_CLIENT=try
+      - LDAP_REPLICATION=false
+      #- LDAP_REPLICATION_CONFIG_SYNCPROV=binddn="cn=admin,cn=config" bindmethod=simple credentials=$LDAP_CONFIG_PASSWORD searchbase="cn=config" type=refreshAndPersist retry="60 +" timeout=1 starttls=critical
+      #- LDAP_REPLICATION_DB_SYNCPROV=binddn="cn=admin,$LDAP_BASE_DN" bindmethod=simple credentials=$LDAP_ADMIN_PASSWORD searchbase="$LDAP_BASE_DN" type=refreshAndPersist interval=00:00:00:10 retry="60 +" timeout=1 starttls=critical
+      #- LDAP_REPLICATION_HOSTS=['ldaps://ldap.${DOMAIN}','ldaps://ldap2.${DOMAIN}']
+      - KEEP_EXISTING_CONFIG=false
+      - LDAP_REMOVE_CONFIG_AFTER_SETUP=true
+      - LDAP_SSL_HELPER_PREFIX=ldap
+    tty: true
+    stdin_open: true
+    command: --copy-service --loglevel warning
+    volumes:
+      - /srv/openldap/lib/ldap/:/var/lib/ldap
+      - /srv/openldap/slapd.d/:/etc/ldap/slapd.d
+      - /srv/openldap/ldif/:/srv/ldif
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/letsencrypt/live/intranet.${DOMAIN}:/container/service/slapd/assets/certs:ro
+      - /etc/letsencrypt/archive/intranet.${DOMAIN}:/container/service/slapd/archive/intranet.${DOMAIN}:ro
+      - ./services/openldap/ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom
 
 
 
