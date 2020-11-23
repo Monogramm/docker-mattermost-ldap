@@ -62,7 +62,7 @@ services:
       - LDAP_BIND_PASS=$LDAP_BIND_PASS
       - DB_HOST="127.0.0.1"
       - DB_PORT="3306"
-      - DB_TYPE="mysqli"
+      - DB_TYPE="mysql"
       - DB_NAME=$DB_NAME
       - DB_USER=$DB_USER
       - DB_PASS=$DB_PASS
@@ -147,8 +147,9 @@ services:
       - MM_USERNAME=${MATTERMOST_DB_USER}
       - MM_PASSWORD=${MATTERMOST_DB_PWD}
       # in case your config is not in default location
-      #- MM_CONFIG=/mattermost/config/config.json
+      #- MM_CONFIG=./config.json
       # SQL Settings
+      - MM_SQLSETTINGS_DRIVERNAME=postgres
       - MM_SQLSETTINGS_DATASOURCE=postgres://${MATTERMOST_DB_USER}:${MATTERMOST_DB_PWD}@mattermostdb:5432/${MATTERMOST_DB_NAME}?sslmode=disable&connect_timeout=10
       # Service Settings
       - MM_SERVICESETTINGS_SITEURL=https://mattermost.${DOMAIN}
@@ -159,8 +160,8 @@ services:
       # Email Settings
       - MM_EMAILSETTINGS_SMTPUSERNAME=${MATTERMOST_SMTP_USER}
       - MM_EMAILSETTINGS_SMTPPASSWORD=${MATTERMOST_SMTP_PWD}
-      - MM_EMAILSETTINGS_SMTPSERVER=mail.${DOMAIN}
-      - MM_EMAILSETTINGS_SMTPPORT=587
+      - MM_EMAILSETTINGS_SMTPSERVER=mailer
+      - MM_EMAILSETTINGS_SMTPPORT=1025
     volumes:
       - /srv/mattermost/app/config:/mattermost/config
       - /srv/mattermost/app/data:/mattermost/data
