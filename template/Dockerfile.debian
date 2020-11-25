@@ -35,8 +35,9 @@ ADD https://github.com/crivaledaz/Mattermost-LDAP/archive/${VERSION}.tar.gz /tmp
 RUN set -ex; \
     mkdir -p /tmp/Mattermost-LDAP/; \
     tar zxvf /tmp/${VERSION}.tar.gz -C /tmp/Mattermost-LDAP/; \
+    rm -f /tmp/${VERSION}.tar.gz; \
     mkdir -p /opt/Mattermost-LDAP/; \
-    cp -R "/tmp/Mattermost-LDAP/Mattermost-LDAP-${VERSION}"/ /opt/Mattermost-LDAP/; \
+    cp -R "/tmp/Mattermost-LDAP/Mattermost-LDAP-${VERSION}"/* /opt/Mattermost-LDAP/; \
     rm -rf /tmp/Mattermost-LDAP; \
     echo "${VERSION} ${VCS_REF} ${BUILD_DATE}" > '/opt/Mattermost-LDAP/.docker-version';
 

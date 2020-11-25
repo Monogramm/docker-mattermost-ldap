@@ -67,7 +67,7 @@ services:
       - DB_USER=$DB_USER
       - DB_PASS=$DB_PASS
     volumes:
-      - $HOME/html:/var/www/html
+      #- $HOME/html:/var/www/html
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
 
@@ -163,9 +163,9 @@ services:
       - MM_EMAILSETTINGS_SMTPSERVER=mailer
       - MM_EMAILSETTINGS_SMTPPORT=1025
     volumes:
-      - /srv/mattermost/app/config:/mattermost/config
-      - /srv/mattermost/app/data:/mattermost/data
-      - /srv/mattermost/app/logs:/mattermost/logs
+      #- /srv/mattermost/app/config:/mattermost/config
+      #- /srv/mattermost/app/data:/mattermost/data
+      #- /srv/mattermost/app/logs:/mattermost/logs
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
 

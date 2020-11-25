@@ -28,16 +28,16 @@ ARG BUILD_DATE
 ARG VERSION=master
 
 # Get Mattermost-LDAP project
-ADD https://github.com/crivaledaz/Mattermost-LDAP/archive/${VERSION}.zip /tmp/Mattermost-LDAP.zip
+ADD https://github.com/crivaledaz/Mattermost-LDAP/archive/${VERSION}.tar.gz /tmp/${VERSION}.tar.gz
 
 # Decompress the tar.gz to the right location.
 # Keep track of image version
-    #tar zxvf /tmp/${VERSION}.tar.gz -C /tmp/Mattermost-LDAP/; \
 RUN set -ex; \
-    mkdir -p /tmp/Mattermost-LDAP; \
-    unzip -q /tmp/Mattermost-LDAP.zip -d /tmp/Mattermost-LDAP; \
-    mkdir -p /opt/Mattermost-LDAP; \
-    cp -R "/tmp/Mattermost-LDAP/Mattermost-LDAP"/ /opt/Mattermost-LDAP; \
+    mkdir -p /tmp/Mattermost-LDAP/; \
+    tar zxvf /tmp/${VERSION}.tar.gz -C /tmp/Mattermost-LDAP/; \
+    rm -f /tmp/${VERSION}.tar.gz; \
+    mkdir -p /opt/Mattermost-LDAP/; \
+    cp -R "/tmp/Mattermost-LDAP/Mattermost-LDAP-${VERSION}"/* /opt/Mattermost-LDAP/; \
     rm -rf /tmp/Mattermost-LDAP; \
     echo "${VERSION} ${VCS_REF} ${BUILD_DATE}" > '/opt/Mattermost-LDAP/.docker-version';
 

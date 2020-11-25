@@ -15,7 +15,7 @@ declare -A compose=(
 
 declare -A base=(
 	[apache]='debian'
-	[fpm]='alpine'
+	[fpm]='debian'
 	[fpm-alpine]='alpine'
 )
 
@@ -33,7 +33,7 @@ function version_greater_or_equal() {
 	[[ "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1" || "$1" == "$2" ]];
 }
 
-dockerRepo="Monogramm/docker-mattermost-ldap"
+dockerRepo="monogramm/docker-mattermost-ldap"
 # Retrieve automatically the latest versions
 #latests=( $( curl -fsSL 'https://api.github.com/repos/Monogramm/mattermost-ldap/tags' |tac|tac| \
 #	grep -oE '[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' | \
@@ -85,7 +85,10 @@ for latest in "${latests[@]}"; do
 			if [[ $1 == 'build' ]]; then
 				tag="$version-$variant"
 				echo "Build Dockerfile for ${tag}"
-				docker build -t "${dockerRepo}:${tag}" "$dir"
+				docker build \
+                                    --build-arg VCS_REF=`git rev-parse --short HEAD` \
+                                    --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
+                                    -t "${dockerRepo}:${tag}" "$dir"
 			fi
 		done
 	fi
