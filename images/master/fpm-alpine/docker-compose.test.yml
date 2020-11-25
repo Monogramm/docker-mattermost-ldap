@@ -191,58 +191,73 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
+  
+  ldap:
+    container_name: ldap
+    # use the image tag to pull directly from the repo
+    image: rroemhild/test-openldap
+    
+    # use build tag to use the local repo
+    # build:
+    #     context: ./
+    #     dockerfile: ./Dockerfile
+    ports:
+        - '389:389'
+        - '636:636'
+    volumes:
+        - /srv/openldap/:/var/lib/ldap/
 
-  # LDAP
-  openldap:
-  image: monogramm/docker-openldap:1.1.11
-  #hostname: "ldap.${DOMAIN}" # important: same as domainname and LDAP_DOMAIN
-  #domainname: "ldap.${DOMAIN}"
-  container_name: openldap
-  networks:
-    - default
-  #restart: always
-  ports:
-    - "389:389"
-    - "636:636"
-  environment:
-    BOOTSTRAP: "true"
-    LDAP_LOG_LEVEL: "256"
-    LDAP_ORGANISATION: "${COMPANY_NAME}"
-    HOSTNAME: "ldap.${DOMAIN}" # important: same as domainname and LDAP_DOMAIN
-    LDAP_DOMAIN: "ldap.${DOMAIN}"
-    LDAP_BASE_DN: "${LDAP_BASE}"
-    LDAP_ADMIN_PASSWORD: "${LDAP_ADMIN_PWD}"
-    LDAP_CONFIG_PASSWORD: "${LDAP_CONFIG_PASSWORD}"
-    LDAP_READONLY_USER: "false"
-    #LDAP_READONLY_USER_USERNAME: "readonly"
-    #LDAP_READONLY_USER_PASSWORD: "readonly"
-    LDAP_RFC2307BIS_SCHEMA: "false"
-    LDAP_BACKEND: "${LDAP_BACKEND}"
-    LDAP_TLS: "true"
-    LDAP_TLS_CRT_FILENAME: "cert.pem"
-    LDAP_TLS_KEY_FILENAME: "privkey.pem"
-    LDAP_TLS_CA_CRT_FILENAME: "fullchain.pem"
-    LDAP_TLS_ENFORCE: "true"
-    LDAP_TLS_CIPHER_SUITE: "NORMAL:SECURE256:-VERS-SSL3.0"
-    LDAP_TLS_PROTOCOL_MIN: "3.1"
-    LDAP_TLS_VERIFY_CLIENT: "try"
-    LDAP_REPLICATION: "false"
-    #LDAP_REPLICATION_CONFIG_SYNCPROV: "binddn="cn=admin,cn=config" bindmethod=simple credentials=$LDAP_CONFIG_PASSWORD searchbase="cn=config" type=refreshAndPersist retry="60 +" timeout=1 starttls=critical"
-    #LDAP_REPLICATION_DB_SYNCPROV: "binddn="cn=admin,$LDAP_BASE_DN" bindmethod=simple credentials=$LDAP_ADMIN_PASSWORD searchbase="$LDAP_BASE_DN" type=refreshAndPersist interval=00:00:00:10 retry="60 +" timeout=1 starttls=critical"
-    #LDAP_REPLICATION_HOSTS: "['ldaps://ldap.${DOMAIN}','ldaps://ldap2.${DOMAIN}']"
-    KEEP_EXISTING_CONFIG: "false"
-    LDAP_REMOVE_CONFIG_AFTER_SETUP: "true"
-    LDAP_SSL_HELPER_PREFIX: "ldap"
-  tty: true
-  stdin_open: true
-  command: --copy-service --loglevel warning
-  volumes:
-    - /srv/openldap/lib/ldap/:/var/lib/ldap
-    - /srv/openldap/slapd.d/:/etc/ldap/slapd.d
-    - /srv/openldap/ldif/:/srv/ldif
-    - /etc/localtime:/etc/localtime:ro
-    - /etc/timezone:/etc/timezone:ro
-    - /etc/letsencrypt/live/intranet.${DOMAIN}:/container/service/slapd/assets/certs:ro
-    - /etc/letsencrypt/archive/intranet.${DOMAIN}:/container/service/slapd/archive/intranet.${DOMAIN}:ro
-    - ./services/openldap/ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom
+#  # LDAP
+#  openldap:
+#  image: monogramm/docker-openldap:1.1.11
+#  #hostname: "ldap.${DOMAIN}" # important: same as domainname and LDAP_DOMAIN
+#  #domainname: "ldap.${DOMAIN}"
+#  container_name: openldap
+#  networks:
+#    - default
+#  #restart: always
+#  ports:
+#    - "389:389"
+#    - "636:636"
+#  environment:
+#    BOOTSTRAP: "true"
+#    LDAP_LOG_LEVEL: "256"
+#    LDAP_ORGANISATION: "${COMPANY_NAME}"
+#    HOSTNAME: "ldap.${DOMAIN}" # important: same as domainname and LDAP_DOMAIN
+#    LDAP_DOMAIN: "ldap.${DOMAIN}"
+#    LDAP_BASE_DN: "${LDAP_BASE}"
+#    LDAP_ADMIN_PASSWORD: "${LDAP_ADMIN_PWD}"
+#    LDAP_CONFIG_PASSWORD: "${LDAP_CONFIG_PASSWORD}"
+#    LDAP_READONLY_USER: "false"
+#    #LDAP_READONLY_USER_USERNAME: "readonly"
+#    #LDAP_READONLY_USER_PASSWORD: "readonly"
+#    LDAP_RFC2307BIS_SCHEMA: "false"
+#    LDAP_BACKEND: "${LDAP_BACKEND}"
+#    LDAP_TLS: "true"
+#    LDAP_TLS_CRT_FILENAME: "cert.pem"
+#    LDAP_TLS_KEY_FILENAME: "privkey.pem"
+#    LDAP_TLS_CA_CRT_FILENAME: "fullchain.pem"
+#    LDAP_TLS_ENFORCE: "true"
+#    LDAP_TLS_CIPHER_SUITE: "NORMAL:SECURE256:-VERS-SSL3.0"
+#    LDAP_TLS_PROTOCOL_MIN: "3.1"
+#    LDAP_TLS_VERIFY_CLIENT: "try"
+#    LDAP_REPLICATION: "false"
+#    #LDAP_REPLICATION_CONFIG_SYNCPROV: "binddn="cn=admin,cn=config" bindmethod=simple credentials=$LDAP_CONFIG_PASSWORD searchbase="cn=config" type=refreshAndPersist retry="60 +" timeout=1 starttls=critical"
+#    #LDAP_REPLICATION_DB_SYNCPROV: "binddn="cn=admin,$LDAP_BASE_DN" bindmethod=simple credentials=$LDAP_ADMIN_PASSWORD searchbase="$LDAP_BASE_DN" type=refreshAndPersist interval=00:00:00:10 retry="60 +" timeout=1 starttls=critical"
+#    #LDAP_REPLICATION_HOSTS: "['ldaps://ldap.${DOMAIN}','ldaps://ldap2.${DOMAIN}']"
+#    KEEP_EXISTING_CONFIG: "false"
+#    LDAP_REMOVE_CONFIG_AFTER_SETUP: "true"
+#    LDAP_SSL_HELPER_PREFIX: "ldap"
+#  tty: true
+#  stdin_open: true
+#  command: --copy-service --loglevel warning
+#  volumes:
+#    - /srv/openldap/lib/ldap/:/var/lib/ldap
+#    - /srv/openldap/slapd.d/:/etc/ldap/slapd.d
+#    - /srv/openldap/ldif/:/srv/ldif
+#    - /etc/localtime:/etc/localtime:ro
+#    - /etc/timezone:/etc/timezone:ro
+#    - /etc/letsencrypt/live/intranet.${DOMAIN}:/container/service/slapd/assets/certs:ro
+#    - /etc/letsencrypt/archive/intranet.${DOMAIN}:/container/service/slapd/archive/intranet.${DOMAIN}:ro
+#    - ./services/openldap/ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom
 
