@@ -1,7 +1,6 @@
 version: "2.3"
 
 networks:
-  default:
   mattermost-ldap_internal_network:
     internal: true
   mattermost_internal_network:
@@ -38,6 +37,8 @@ services:
     # For production, download prebuilt image
     #image: ${IMAGE_NAME}
     container_name: mattermost-ldap
+    hostname: mattermost
+    domainname: ${DOMAIN}
     #restart: always
     depends_on:
       mattermost-ldap-db:
@@ -45,8 +46,8 @@ services:
     links:
       - mattermost-ldap-db
     ports:
-      - "8080:8080"
-      - "443:443"
+      - "8080:80"
+      - "8443:443"
     networks:
       - mattermost-ldap_internal_network
       - default
@@ -127,8 +128,9 @@ services:
     #  context: services/mattermost/build
     #  args:
     #    - edition=team
-    hostname: mattermost.${DOMAIN}
     container_name: mattermost
+    hostname: mattermost
+    domainname: ${DOMAIN}
     networks:
       - default
       - mattermost_internal_network
@@ -137,7 +139,7 @@ services:
       mattermostdb:
         condition: service_healthy
     ports:
-      - "30081:8000"
+      - "30081:8065"
     environment:
       # set same as db credentials and dbname
       - DB_HOST=mattermostdb
@@ -187,7 +189,7 @@ services:
   ldap:
     container_name: ldap
     # use the image tag to pull directly from the repo
-    image: rroemhild/test-openldap
+    image: rroemhild/test-openldap:latest
     
     # use build tag to use the local repo
     # build:
@@ -196,8 +198,8 @@ services:
     ports:
         - '389:389'
         - '636:636'
-    volumes:
-        - /srv/openldap/:/var/lib/ldap/
+  #  volumes:
+  #    - ${HOME}/openldap:/var/lib/ldap/
 
 #  # LDAP
 #  openldap:
