@@ -1,19 +1,28 @@
 #!/bin/bash
 set -eo pipefail
 
+declare -A cmd=(
+	[apache]='apache2-foreground'
+	[fpm]='php-fpm'
+	[fpm-alpine]='php-fpm'
+)
+
 declare -A compose=(
-	[debian]='debian'
-	[alpine]='alpine'
+	[apache]='apache'
+	[fpm]='fpm'
+	[fpm-alpine]='fpm'
 )
 
 declare -A base=(
-	[debian]='debian'
-	[alpine]='alpine'
+	[apache]='debian'
+	[fpm]='alpine'
+	[fpm-alpine]='alpine'
 )
 
 variants=(
-	debian
-	alpine
+	apache
+	fpm
+	fpm-alpine
 )
 
 min_version='1.0'
@@ -29,12 +38,12 @@ dockerRepo="Monogramm/docker-mattermost-ldap"
 #latests=( $( curl -fsSL 'https://api.github.com/repos/Monogramm/mattermost-ldap/tags' |tac|tac| \
 #	grep -oE '[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' | \
 #	sort -urV ) )
-latests=( 1.0.0 )
+latests=( master )
 
 # Remove existing images
 echo "reset docker images"
-find ./images -maxdepth 1 -type d -regextype sed -regex '\./images/[[:digit:]]\+\.[[:digit:]]\+' -exec rm -r '{}' \;
-#rm -rf ./images/*
+#find ./images -maxdepth 1 -type d -regextype sed -regex '\./images/[[:digit:]]\+\.[[:digit:]]\+' -exec rm -r '{}' \;
+rm -rf ./images/*
 
 echo "update docker images"
 travisEnv=
@@ -67,6 +76,7 @@ for latest in "${latests[@]}"; do
 			sed -ri -e '
 				s/%%VARIANT%%/-'"$variant"'/g;
 				s/%%VERSION%%/'"$latest"'/g;
+				s/%%CMD%%/'"${cmd[$variant]}"'/g;
 			' "$dir/Dockerfile"
 
 			# Add Travis-CI env var

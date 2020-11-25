@@ -98,10 +98,13 @@ wait_for_services() {
 # init / update application
 init() {
     # Check version
+    log "jean-michel"
     if [ ! -f "./.docker-version" ]; then
-        log "Mattermost-LDAP init to $(cat /opt/Mattermost-LDAP/.docker-version)..."
+        log "Toto Mattermost-LDAP init to ..."
         # Install server Oauth
+        log "jean-michel"
         cp -r /opt/Mattermost-LDAP/oauth/ /var/www/html/
+        log "jean-michel 2"
         # Get config file
         cp /var/www/html/oauth/config_db.php.example /var/www/html/oauth/config_db.php
         cp /var/www/html/oauth/LDAP/config_ldap.php.example /var/www/html/oauth/LDAP/config_ldap.php
@@ -120,7 +123,7 @@ init() {
         rm /var/www/html/oauth/config_db.php.example /var/www/html/oauth/LDAP/config_ldap.php.example
     fi
 
-    cp -p "/opt/Mattermost-LDAP/.docker-version" "./.docker-version"
+    # cp -p "/opt/Mattermost-LDAP/.docker-version" "./.docker-version"
 }
 
 # start application

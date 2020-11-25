@@ -9,28 +9,28 @@ networks:
 
 services:
   # https://docs.docker.com/docker-hub/builds/automated-testing/
-  # sut:
-  #   build:
-  #     context: ./test
-  #     dockerfile: Dockerfile
-  #   depends_on:
-  #     mattermost-ldap-db:
-  #       condition: service_healthy
-  #     mattermost-ldap:
-  #       condition: service_started
-  #   networks:
-  #     - mattermost-ldap_internal_network
-  #   volumes_from:
-  #     - mattermost-ldap
-  #   volumes:
-  #     - /etc/localtime:/etc/localtime:ro
-  #     - /etc/timezone:/etc/timezone:ro
+  sut:
+    build:
+      context: ./test
+      dockerfile: Dockerfile
+    depends_on:
+      mattermost-ldap-db:
+        condition: service_healthy
+      mattermost-ldap:
+        condition: service_started
+    networks:
+      - mattermost-ldap_internal_network
+    volumes_from:
+      - mattermost-ldap
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
 
   mattermost-ldap:
     # For development or CI, tag build from local Dockerfile
     build:
       context: .
-      dockerfile: Dockerfile.debian
+      dockerfile: Dockerfile
       args: 
         - TAG=${TAG}
         - VCS_REF=${VCS_REF}

@@ -1,0 +1,248 @@
+version: "2.3"
+
+networks:
+  mattermost-ldap_external_network:
+  mattermost-ldap_internal_network:
+    internal: true
+
+services:
+  # https://docs.docker.com/docker-hub/builds/automated-testing/
+  sut:
+    build:
+      context: ./test
+      dockerfile: Dockerfile
+    depends_on:
+      mattermost-ldap-db:
+        condition: service_healthy
+      mattermost-ldap:
+        condition: service_started
+    networks:
+      - mattermost-ldap_internal_network
+    volumes_from:
+      - mattermost-ldap
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+
+  mattermost-ldap:
+    # For development or CI, tag build from local Dockerfile
+    build:
+      context: ./
+      dockerfile: Dockerfile
+      args: 
+        - TAG=${TAG}
+        - VCS_REF=${VCS_REF}
+        - BUILD_DATE=${BUILD_DATE}
+    # For production, download prebuilt image
+    #image: ${IMAGE_NAME}
+    container_name: mattermost-ldap
+    #restart: always
+    depends_on:
+      mattermost-ldap-db:
+        condition: service_healthy
+    links:
+      - mattermost-ldap-db
+    expose:
+      - '80'
+      - '443'
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - default
+      - mattermost-ldap_internal_network
+    volumes:
+      - $HOME/html:/var/www/html
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    environment:
+      - LDAP_HOST=ldap://ldap.company.com:389/
+      - LDAP_PORT=389
+      - LDAP_VERSION=3
+      - LDAP_START_TLS=true
+      - LDAP_SEARCH_ATTRIBUTE=uid
+      - LDAP_BASE_DN="ou=People,o=Company"
+      - LDAP_FILTER="(objectClass=*)"
+      - LDAP_BIND_DN=""
+      - LDAP_BIND_PASS=""
+      - MATTERMOST_LDAP_DB_HOST="127.0.0.1"
+      - MATTERMOST_LDAP_DB_PORT="5432"
+      - MATTERMOST_LDAP_DB_TYPE="pgsql"
+      - DB_NAME=$DB_NAME
+      - DB_USER=$DB_USER
+      - MATTERMOST_LDAP_DB_PASS=$DB_PASS
+
+# Use postgres for alpine
+  mattermost-ldap-db:
+    image: postgres:latest
+    container_name: mattermost-ldap-db
+    restart: always
+    command: --character_set_client=utf8 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --character-set-client-handshake=FALSE
+    networks:
+      - mattermostldap_internal_network
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${DB_USER}", "-d", "${DB_NAME}"]
+      timeout: 10s
+      retries: 5
+    expose:
+      - '5432'
+    #ports:
+    #  - "5432:5432"
+    networks:
+      - mattermost-ldap_internal_network
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
+    volumes:
+      - ${HOME}/db:/var/lib/postgresql/data
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+
+
+# TODO Add the mattermost, mattermost-db, openldap and mailer containers
+
+  mattermostdb:
+    image: mattermost/mattermost-prod-db:5.28.1
+    container_name: mattermostdb
+    networks:
+      - mattermost_internal_network
+    #restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${MATTERMOST_DB_USER}"]
+    expose:
+      - '5432'
+    environment:
+      - POSTGRES_DB=${MATTERMOST_DB_NAME}
+      - POSTGRES_USER=${MATTERMOST_DB_USER}
+      - POSTGRES_PASSWORD=${MATTERMOST_DB_PWD}
+      # uncomment the following to enable backup
+      #- AWS_ACCESS_KEY_ID=XXXX
+      #- AWS_SECRET_ACCESS_KEY=XXXX
+      #- WALE_S3_PREFIX=s3://BUCKET_NAME/PATH
+      #- AWS_REGION=us-east-1
+    volumes:
+      - /srv/mattermost/pgsql/data:/var/lib/postgresql/data
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    
+  mattermost:
+    # TODO Create Team Edition Dockerhub with custom plugins
+    # https://docs.mattermost.com/administration/command-line-tools.html#mattermost-plugin
+    image: mattermost/mattermost-team-edition:5.28.1
+    #build:
+    #  context: services/mattermost/build
+    #  args:
+    #    - edition=team
+    hostname: mattermost.${DOMAIN}
+    container_name: mattermost
+    networks:
+      - default
+      - mattermost_internal_network
+    #restart: unless-stopped
+    depends_on:
+      mattermostdb:
+        condition: service_healthy
+    ports:
+      - "30081:8000"
+    environment:
+      # set same as db credentials and dbname
+      - DB_HOST=mattermostdb
+      - DB_PORT_NUMBER=5432
+      # set same as db credentials and dbname
+      - MM_DBNAME=${MATTERMOST_DB_NAME}
+      - MM_USERNAME=${MATTERMOST_DB_USER}
+      - MM_PASSWORD=${MATTERMOST_DB_PWD}
+      # in case your config is not in default location
+      #- MM_CONFIG=/mattermost/config/config.json
+      # SQL Settings
+      - MM_SQLSETTINGS_DATASOURCE=postgres://${MATTERMOST_DB_USER}:${MATTERMOST_DB_PWD}@mattermostdb:5432/${MATTERMOST_DB_NAME}?sslmode=disable&connect_timeout=10
+      # Service Settings
+      - MM_SERVICESETTINGS_SITEURL=https://mattermost.${DOMAIN}
+      # Team Settings
+      - MM_TEAMSETTINGS_SITENAME=${COMPANY_NAME} - Mattermost
+      # Log Settings
+      - MM_LOGSETTINGS_CONSOLELEVEL=INFO
+      # Email Settings
+      - MM_EMAILSETTINGS_SMTPUSERNAME=${MATTERMOST_SMTP_USER}
+      - MM_EMAILSETTINGS_SMTPPASSWORD=${MATTERMOST_SMTP_PWD}
+      - MM_EMAILSETTINGS_SMTPSERVER=mail.${DOMAIN}
+      - MM_EMAILSETTINGS_SMTPPORT=587
+    volumes:
+      - /srv/mattermost/app/config:/mattermost/config
+      - /srv/mattermost/app/data:/mattermost/data
+      - /srv/mattermost/app/logs:/mattermost/logs
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+
+  mailer:
+    image: sj26/mailcatcher:latest
+    hostname: mailer
+    container_name: mailer
+    networks:
+      - default
+    restart: always
+    expose:
+      - 1025
+    ports:
+      - "1080:1080"
+    networks:
+      - external_network
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+
+  # LDAP
+  openldap:
+  image: monogramm/docker-openldap:1.1.11
+  #hostname: "ldap.${DOMAIN}" # important: same as domainname and LDAP_DOMAIN
+  #domainname: "ldap.${DOMAIN}"
+  container_name: openldap
+  networks:
+    - default
+  #restart: always
+  ports:
+    - "389:389"
+    - "636:636"
+  environment:
+    BOOTSTRAP: "true"
+    LDAP_LOG_LEVEL: "256"
+    LDAP_ORGANISATION: "${COMPANY_NAME}"
+    HOSTNAME: "ldap.${DOMAIN}" # important: same as domainname and LDAP_DOMAIN
+    LDAP_DOMAIN: "ldap.${DOMAIN}"
+    LDAP_BASE_DN: "${LDAP_BASE}"
+    LDAP_ADMIN_PASSWORD: "${LDAP_ADMIN_PWD}"
+    LDAP_CONFIG_PASSWORD: "${LDAP_CONFIG_PASSWORD}"
+    LDAP_READONLY_USER: "false"
+    #LDAP_READONLY_USER_USERNAME: "readonly"
+    #LDAP_READONLY_USER_PASSWORD: "readonly"
+    LDAP_RFC2307BIS_SCHEMA: "false"
+    LDAP_BACKEND: "${LDAP_BACKEND}"
+    LDAP_TLS: "true"
+    LDAP_TLS_CRT_FILENAME: "cert.pem"
+    LDAP_TLS_KEY_FILENAME: "privkey.pem"
+    LDAP_TLS_CA_CRT_FILENAME: "fullchain.pem"
+    LDAP_TLS_ENFORCE: "true"
+    LDAP_TLS_CIPHER_SUITE: "NORMAL:SECURE256:-VERS-SSL3.0"
+    LDAP_TLS_PROTOCOL_MIN: "3.1"
+    LDAP_TLS_VERIFY_CLIENT: "try"
+    LDAP_REPLICATION: "false"
+    #LDAP_REPLICATION_CONFIG_SYNCPROV: "binddn="cn=admin,cn=config" bindmethod=simple credentials=$LDAP_CONFIG_PASSWORD searchbase="cn=config" type=refreshAndPersist retry="60 +" timeout=1 starttls=critical"
+    #LDAP_REPLICATION_DB_SYNCPROV: "binddn="cn=admin,$LDAP_BASE_DN" bindmethod=simple credentials=$LDAP_ADMIN_PASSWORD searchbase="$LDAP_BASE_DN" type=refreshAndPersist interval=00:00:00:10 retry="60 +" timeout=1 starttls=critical"
+    #LDAP_REPLICATION_HOSTS: "['ldaps://ldap.${DOMAIN}','ldaps://ldap2.${DOMAIN}']"
+    KEEP_EXISTING_CONFIG: "false"
+    LDAP_REMOVE_CONFIG_AFTER_SETUP: "true"
+    LDAP_SSL_HELPER_PREFIX: "ldap"
+  tty: true
+  stdin_open: true
+  command: --copy-service --loglevel warning
+  volumes:
+    - /srv/openldap/lib/ldap/:/var/lib/ldap
+    - /srv/openldap/slapd.d/:/etc/ldap/slapd.d
+    - /srv/openldap/ldif/:/srv/ldif
+    - /etc/localtime:/etc/localtime:ro
+    - /etc/timezone:/etc/timezone:ro
+    - /etc/letsencrypt/live/intranet.${DOMAIN}:/container/service/slapd/assets/certs:ro
+    - /etc/letsencrypt/archive/intranet.${DOMAIN}:/container/service/slapd/archive/intranet.${DOMAIN}:ro
+    - ./services/openldap/ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom
+

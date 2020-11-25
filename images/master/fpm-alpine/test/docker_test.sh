@@ -8,7 +8,6 @@ sleep 60
 echo "Checking main containers are reachable..."
 if ! ping -c 10 -q mattermost-ldap-db ; then
     echo 'Mattermost-LDAP Database container is not responding!'
-    # TODO Display logs to help bug fixing
     #echo 'Check the following logs for details:'
     #tail -n 100 logs/*.log
     exit 2
@@ -16,7 +15,6 @@ fi
 
 if ! ping -c 10 -q mattermost-ldap ; then
     echo 'Mattermost-LDAP Main container is not responding!'
-    # TODO Display logs to help bug fixing
     #echo 'Check the following logs for details:'
     #tail -n 100 logs/*.log
     exit 4

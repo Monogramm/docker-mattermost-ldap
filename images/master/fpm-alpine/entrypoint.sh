@@ -9,7 +9,7 @@ set -e
 # Functions
 
 log() {
-  echo "[$0] [$(date +%Y-%m-%dT%H:%M:%S%:z)] $@"
+    echo "[$0] [$(date +%Y-%m-%dT%H:%M:%S%:z)] $@"
 }
 
 # wait for file/directory to exists
@@ -24,7 +24,7 @@ wait_for_file() {
     WAIT_STEP=${2:-10}
     WAIT_TIMEOUT=${3:--1}
 
-    while [ ! -d "${WAIT_FOR_FILE}" ] ; do
+    while [ ! -d "${WAIT_FOR_FILE}" ]; do
         if [ "${WAIT_TIMEOUT}" -gt 0 ] && [ "${WAIT_TIME}" -gt "${WAIT_TIMEOUT}" ]; then
             log "File '${WAIT_FOR_FILE}' was not available on time!"
             exit 1
@@ -32,7 +32,7 @@ wait_for_file() {
 
         log "Waiting file '${WAIT_FOR_FILE}'..."
         sleep "${WAIT_STEP}"
-        WAIT_TIME=$(( WAIT_TIME + WAIT_STEP ))
+        WAIT_TIME=$((WAIT_TIME + WAIT_STEP))
     done
     log "File '${WAIT_FOR_FILE}' exists."
 }
@@ -67,7 +67,7 @@ wait_for_service() {
     WAIT_STEP=${3:-10}
     WAIT_TIMEOUT=${4:--1}
 
-    while ! nc -z "${WAIT_FOR_ADDR}" "${WAIT_FOR_PORT}" ; do
+    while ! nc -z "${WAIT_FOR_ADDR}" "${WAIT_FOR_PORT}"; do
         if [ "${WAIT_TIMEOUT}" -gt 0 ] && [ "${WAIT_TIME}" -gt "${WAIT_TIMEOUT}" ]; then
             log "Service '${WAIT_FOR_ADDR}:${WAIT_FOR_PORT}' was not available on time!"
             exit 1
@@ -75,13 +75,13 @@ wait_for_service() {
 
         log "Waiting service '${WAIT_FOR_ADDR}:${WAIT_FOR_PORT}'..."
         sleep "${WAIT_STEP}"
-        WAIT_TIME=$(( WAIT_TIME + WAIT_STEP ))
+        WAIT_TIME=$((WAIT_TIME + WAIT_STEP))
     done
     log "Service '${WAIT_FOR_ADDR}:${WAIT_FOR_PORT}' available."
 }
 
 wait_for_services() {
-    if [ -z "${WAIT_FOR_SERVICES}" ]; then
+    if [ -z "${WAIT_FOR_SERVICES:-$1}" ]; then
         log "Missing env var 'WAIT_FOR_SERVICES' defining services to wait for!"
         exit 1
     fi
@@ -93,6 +93,51 @@ wait_for_services() {
         wait_for_service "${WAIT_FOR_ADDR}" "${WAIT_FOR_PORT}" "${WAIT_STEP}" "${WAIT_TIMEOUT}"
     done
 
+}
+
+# init / update application
+init() {
+    # Check version
+    log "jean-michel"
+    if [ ! -f "./.docker-version" ]; then
+        log "Toto Mattermost-LDAP init to ..."
+        # Install server Oauth
+        log "jean-michel"
+        cp -r /opt/Mattermost-LDAP/oauth/ /var/www/html/
+        log "jean-michel 2"
+        # Get config file
+        cp /var/www/html/oauth/config_db.php.example /var/www/html/oauth/config_db.php
+        cp /var/www/html/oauth/LDAP/config_ldap.php.example /var/www/html/oauth/LDAP/config_ldap.php
+        log "echo ${VERSION} ${VCS_REF} ${BUILD_DATE} to docker-version file"
+        echo "${VERSION} ${VCS_REF} ${BUILD_DATE}" > "/opt/Mattermost-LDAP/.docker-version"
+
+        rm /var/www/html/oauth/config_db.php.example /var/www/html/oauth/LDAP/config_ldap.php.example
+    elif ! cmp --silent "./.docker-version" "/opt/Mattermost-LDAP/.docker-version"; then
+        log "Mattermost-LDAP update from $(cat ./.docker-version) to $(cat /opt/Mattermost-LDAP/.docker-version)..."
+        # Install server Oauth
+        rsync -r /opt/Mattermost-LDAP/oauth/ /var/www/html/
+        # Get config file
+        rsync /var/www/html/oauth/config_db.php.example /var/www/html/oauth/config_db.php
+        rsync /var/www/html/oauth/LDAP/config_ldap.php.example /var/www/html/oauth/LDAP/config_ldap.php
+
+        rm /var/www/html/oauth/config_db.php.example /var/www/html/oauth/LDAP/config_ldap.php.example
+    fi
+
+    # cp -p "/opt/Mattermost-LDAP/.docker-version" "./.docker-version"
+}
+
+# start application
+start() {
+    init
+
+    log "Update the config_db.php file..."
+    sed -i \
+        -e "s|\/\/date_default_timezone_set \(\'Europe/Paris\'\);|date_default_timezone_set \(\'TIMEZONE\'\);|g" \
+        /var/www/html/oauth/config_db.php
+
+
+    log "Start main service: '$@'"
+    exec "$@"
 }
 
 # display help
@@ -114,9 +159,9 @@ Options:
 
 # Execute task based on command
 case "${1}" in
-  # Management tasks
-  ("--help") print_help ;;
-  # Service tasks
-  ("start") echo "TODO Start main service" ;;
-  (*) exec "$@" ;;
+# Management tasks
+"--help") print_help ;;
+    # Service tasks
+"start") start "$2" ;;
+*) exec "$@" ;;
 esac
