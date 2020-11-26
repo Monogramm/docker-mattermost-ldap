@@ -148,7 +148,7 @@ services:
       mattermostdb:
         condition: service_healthy
       ports:
-        - "30081:8065"
+        - "8065:8065"
     environment:
       # set same as db credentials and dbname
       - DB_HOST=mattermostdb

@@ -132,6 +132,20 @@ start() {
         -e "s|\/\/date_default_timezone_set \(\'Europe/Paris\'\);|date_default_timezone_set \(\'TIMEZONE\'\);|g" \
         /var/www/html/oauth/config_db.php
 
+    log "Update the init database files..."
+    sed -i \
+        -e "s|source config_init\.sh|source \/opt\/Mattermost-LDAP\/db_init\/config_init\.sh|g" \
+        -e "s|mysql_pass=\"\"|mysql_pass=\"\${DB_ROOT_PASSWD}\"|g" \
+        -e "s|sudo mysql -u root --password=\$mysql_pass --execute \"CREATE DATABASE \$db_name;\"|sudo mysql -u root --password=\$mysql_pass -h \$db_host --execute \"CREATE DATABASE \$db_name;\"|g" \
+        /opt/Mattermost-LDAP/db_init/init_mysql.sh
+
+    # if mysql
+        /opt/Mattermost-LDAP/db_init/init_mysql.sh
+#   # elif postgres
+#       /opt/Mattermost-LDAP/db_init/init_postgres.sh
+#   # else
+#       log "No database detected for initialisation."
+#       exit
 
     log "Start main service: '$@'"
     exec "$@"

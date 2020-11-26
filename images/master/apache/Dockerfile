@@ -6,13 +6,15 @@ RUN set -ex; \
     apt-get update; \
     apt-get install -y \
         git \
+        default-mysql-client \
         libpq-dev \
         libldap2-dev \
         rsync \
+        sudo \
     ; \
     rm -rf /var/lib/apt/lists/*; \
     docker-php-ext-configure pgsql --with-pgsql=/usr/local/pgsql; \
-    docker-php-ext-install pdo pdo_pgsql pgsql; \
+    docker-php-ext-install mysqli pdo pdo_mysql pdo_pgsql pgsql; \
     docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu/; \
     docker-php-ext-install ldap; \
     ln -s /usr/local/etc/php/php.ini-production /usr/local/etc/php/php.ini;
@@ -39,6 +41,8 @@ RUN set -ex; \
     mkdir -p /opt/Mattermost-LDAP/; \
     cp -R "/tmp/Mattermost-LDAP/Mattermost-LDAP-${VERSION}"/* /opt/Mattermost-LDAP/; \
     rm -rf /tmp/Mattermost-LDAP; \
+    cp /opt/Mattermost-LDAP/db_init/config_init.sh.example /opt/Mattermost-LDAP/db_init/config_init.sh; \
+    rm /opt/Mattermost-LDAP/db_init/config_init.sh.example; \
     echo "${VERSION} ${VCS_REF} ${BUILD_DATE}" > '/opt/Mattermost-LDAP/.docker-version';
 
 # Container labels (http://label-schema.org/)
