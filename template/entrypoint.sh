@@ -136,7 +136,8 @@ start() {
     sed -i \
         -e "s|source config_init\.sh|source \/opt\/Mattermost-LDAP\/db_init\/config_init\.sh|g" \
         -e "s|mysql_pass=\"\"|mysql_pass=\"\${DB_ROOT_PASSWD}\"|g" \
-        -e "s|sudo mysql -u root --password=\$mysql_pass --execute \"CREATE DATABASE \$db_name;\"|sudo mysql -u root --password=\$mysql_pass -h \$db_host --execute \"CREATE DATABASE \$db_name;\"|g" \
+        -e "s|sudo mysql -u root --password=\$mysql_pass --execute|sudo mysql -u root --password=\$mysql_pass -h \$db_host --execute|g" \
+        -e "s|mysql -u \$db_user --password=\$db_pass \$db_name --execute|mysql -u \$db_user --password=\$db_pass -h \$db_host \$db_name --execute|g" \
         /opt/Mattermost-LDAP/db_init/init_mysql.sh
 
     # if mysql

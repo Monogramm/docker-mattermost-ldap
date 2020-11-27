@@ -97,7 +97,7 @@ services:
       - MYSQL_USER=${DB_USER}
       - MYSQL_PASSWORD=${DB_PASS}
     volumes:
-      - ${HOME}/db/mysql:/var/lib/mysql
+      - ${MATTERMOST_LDAP_HOME}/db/mysql:/var/lib/mysql
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
 
@@ -121,7 +121,7 @@ services:
       #- WALE_S3_PREFIX=s3://BUCKET_NAME/PATH
       #- AWS_REGION=us-east-1
     volumes:
-      - /srv/mattermost/pgsql/data:/var/lib/postgresql/data
+      - ${MATTERMOST_LDAP_HOME}/mattermost/pgsql/data:/var/lib/postgresql/data
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
     
@@ -174,14 +174,14 @@ services:
       - MM_GITLABSETTINGS_ENABLE=true
       - MM_GITLABSETTINGS_SECRET=${MATTERMOST_GITLABSETTINGS_SECRET}
       - MM_GITLABSETTINGS_ID=${MATTERMOST_GITLABSETTINGS_ID}
-      - MM_GITLABSETTINGS_SCOPE=${SCOPE}
+      #- MM_GITLABSETTINGS_SCOPE=${SCOPE}
       - MM_GITLABSETTINGS_AUTHENDPOINT=http://localhost:8080/oauth/authorize.php
       - MM_GITLABSETTINGS_TOKENENDPOINT=http://localhost:8080/oauth/token.php
       - MM_GITLABSETTINGS_USERAPIENDPOINT=http://localhost:8080/api/v4/user.php
     volumes:
-      #- /srv/mattermost/app/config:/mattermost/config
-      #- /srv/mattermost/app/data:/mattermost/data
-      #- /srv/mattermost/app/logs:/mattermost/logs
+      #- ${MATTERMOST_LDAP_HOME}/mattermost/app/config:/mattermost/config
+      #- ${MATTERMOST_LDAP_HOME}/mattermost/app/data:/mattermost/data
+      #- ${MATTERMOST_LDAP_HOME}/mattermost/app/logs:/mattermost/logs
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
 
@@ -213,7 +213,7 @@ services:
         - '389:389'
         - '636:636'
   #  volumes:
-  #    - ${HOME}/openldap:/var/lib/ldap/
+  #    - ${MATTERMOST_LDAP_HOME}/openldap:/var/lib/ldap/
 
 #  # LDAP
 #  openldap:

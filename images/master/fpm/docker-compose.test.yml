@@ -98,7 +98,7 @@ services:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASS}
     volumes:
-      - ${HOME}/db:/var/lib/postgresql/data
+      - ${MATTERMOST_LDAP_HOME}/db:/var/lib/postgresql/data
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
 
@@ -209,7 +209,7 @@ services:
         - '389:389'
         - '636:636'
   #  volumes:
-  #    - ${HOME}/openldap:/var/lib/ldap/
+  #    - ${MATTERMOST_LDAP_HOME}/openldap:/var/lib/ldap/
 
 #  # LDAP
 #  openldap:
