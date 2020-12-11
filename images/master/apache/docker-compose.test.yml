@@ -5,6 +5,7 @@ networks:
     internal: true
   mattermost_internal_network:
     internal: true
+  mattermost_external_network:
 
 services:
   # https://docs.docker.com/docker-hub/builds/automated-testing/
@@ -50,12 +51,12 @@ services:
       - "8443:443"
     networks:
       - mattermost-ldap_internal_network
-      - default
+      - mattermost_external_network
     environment:
       - client_id=${MATTERMOST_GITLABSETTINGS_ID}
       - client_secret=${MATTERMOST_GITLABSETTINGS_SECRET}
-      - redirect_uri=${REDIRECT_URI}
-      - grant_types=authorization_code
+      - redirect_uri=${MATTERMOST_SITE_URL}/signup/gitlab/complete
+      - grant_types=${GRANT_TYPES}
       - scope=${SCOPE}
       - ldap_host=$LDAP_HOST
       - ldap_port=$LDAP_PORT
@@ -73,7 +74,7 @@ services:
       - db_user=$DB_USER
       - db_pass=$DB_PASS
     volumes:
-      #- $HOME/html:/var/www/html
+      - ${MATTERMOST_LDAP_HOME}/html:/var/www/html
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
 
@@ -81,7 +82,7 @@ services:
   mattermost-ldap-db:
     image: mariadb:latest
     container_name: mattermost-ldap-db
-    restart: always
+    #restart: always
     command: --character_set_client=utf8 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --character-set-client-handshake=FALSE
     networks:
       - mattermost-ldap_internal_network
@@ -101,6 +102,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
 
+  # Use official mattermost-prod-db image.
   mattermostdb:
     image: mattermost/mattermost-prod-db:5.28.1
     container_name: mattermostdb
@@ -124,20 +126,15 @@ services:
       - ${MATTERMOST_LDAP_HOME}/mattermost/pgsql/data:/var/lib/postgresql/data
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
-    
+
+  # Use official mattermost image
   mattermost:
-    # TODO Create Team Edition Dockerhub with custom plugins
-    # https://docs.mattermost.com/administration/command-line-tools.html#mattermost-plugin
     image: mattermost/mattermost-team-edition:5.28.1
-    #build:
-    #  context: services/mattermost/build
-    #  args:
-    #    - edition=team
     container_name: mattermost
     hostname: mattermost
     domainname: ${DOMAIN}
     networks:
-      - default
+      - mattermost_external_network
       - mattermost_internal_network
     #restart: unless-stopped
     depends_on:
@@ -153,16 +150,16 @@ services:
       - MM_DBNAME=${MATTERMOST_DB_NAME}
       - MM_USERNAME=${MATTERMOST_DB_USER}
       - MM_PASSWORD=${MATTERMOST_DB_PWD}
-      # in case your config is not in default location
-      #- MM_CONFIG=./config.json
+      # Mattermost config file documentation : https://docs.mattermost.com/administration/config-settings.html
       # SQL Settings
       - MM_SQLSETTINGS_DRIVERNAME=postgres
       - MM_SQLSETTINGS_DATASOURCE=postgres://${MATTERMOST_DB_USER}:${MATTERMOST_DB_PWD}@mattermostdb:5432/${MATTERMOST_DB_NAME}?sslmode=disable&connect_timeout=10
       # Service Settings
-      - MM_SERVICESETTINGS_SITEURL=http://localhost:8065
+      - MM_SERVICESETTINGS_SITEURL=${MATTERMOST_SITE_URL}
       - MM_SERVICESETTINGS_ENABLEOAUTHSERVICEPROVIDER=true
       # Team Settings
       - MM_TEAMSETTINGS_SITENAME=${COMPANY_NAME} - Mattermost
+      - MM_TEAMSETTINGS_ENABLEOPENSERVER=true
       # Log Settings
       - MM_LOGSETTINGS_CONSOLELEVEL=INFO
       # Email Settings
@@ -174,10 +171,9 @@ services:
       - MM_GITLABSETTINGS_ENABLE=true
       - MM_GITLABSETTINGS_SECRET=${MATTERMOST_GITLABSETTINGS_SECRET}
       - MM_GITLABSETTINGS_ID=${MATTERMOST_GITLABSETTINGS_ID}
-      #- MM_GITLABSETTINGS_SCOPE=${SCOPE}
-      - MM_GITLABSETTINGS_AUTHENDPOINT=http://localhost:8080/oauth/authorize.php
-      - MM_GITLABSETTINGS_TOKENENDPOINT=http://localhost:8080/oauth/token.php
-      - MM_GITLABSETTINGS_USERAPIENDPOINT=http://localhost:8080/api/v4/user.php
+      - MM_GITLABSETTINGS_AUTHENDPOINT=${MATTERMOSTLDAP_SITE_URL}/oauth/authorize.php
+      - MM_GITLABSETTINGS_TOKENENDPOINT=${MATTERMOSTLDAP_SITE_URL}/oauth/token.php
+      - MM_GITLABSETTINGS_USERAPIENDPOINT=${MATTERMOSTLDAP_SITE_URL}/oauth/resource.php
     volumes:
       #- ${MATTERMOST_LDAP_HOME}/mattermost/app/config:/mattermost/config
       #- ${MATTERMOST_LDAP_HOME}/mattermost/app/data:/mattermost/data
@@ -190,84 +186,23 @@ services:
     hostname: mailer
     container_name: mailer
     restart: always
-    networks:
-      - default
     expose:
       - 1025
     ports:
       - "1080:1080"
+    networks:
+      - mattermost_internal_network
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
   
   ldap:
     container_name: ldap
-    # use the image tag to pull directly from the repo
     image: rroemhild/test-openldap:latest
-    
-    # use build tag to use the local repo
-    # build:
-    #     context: ./
-    #     dockerfile: ./Dockerfile
+    networks:
+      - mattermost-ldap_internal_network
     ports:
         - '389:389'
         - '636:636'
   #  volumes:
   #    - ${MATTERMOST_LDAP_HOME}/openldap:/var/lib/ldap/
-
-#  # LDAP
-#  openldap:
-#    image: monogramm/docker-openldap:1.1.11
-#    #hostname: "ldap.${DOMAIN}" # important: same as domainname and LDAP_DOMAIN
-#    #domainname: "ldap.${DOMAIN}"
-#    container_name: openldap
-#    networks:
-#      - default
-#    #restart: always
-#    ports:
-#      - "389:389"
-#      - "636:636"
-#    environment:
-#      - BOOTSTRAP=true
-#      - LDAP_LOG_LEVEL=256
-#      - LDAP_ORGANISATION=${COMPANY_NAME}
-#      - HOSTNAME=ldap.${DOMAIN} # important: same as domainname and LDAP_DOMAIN
-#      - LDAP_DOMAIN=ldap.${DOMAIN}
-#      - LDAP_BASE_DN=${LDAP_BASE}
-#      - LDAP_ADMIN_PASSWORD=${LDAP_ADMIN_PWD}
-#      - LDAP_CONFIG_PASSWORD=${LDAP_CONFIG_PASSWORD}
-#      - LDAP_READONLY_USER=false
-#      #- LDAP_READONLY_USER_USERNAME=readonly
-#      #- LDAP_READONLY_USER_PASSWORD=readonly
-#      - LDAP_RFC2307BIS_SCHEMA=false
-#      - LDAP_BACKEND=${LDAP_BACKEND}
-#      - LDAP_TLS=true
-#      - LDAP_TLS_CRT_FILENAME=cert.pem
-#      - LDAP_TLS_KEY_FILENAME=privkey.pem
-#      - LDAP_TLS_CA_CRT_FILENAME=fullchain.pem
-#      - LDAP_TLS_ENFORCE=true
-#      - LDAP_TLS_CIPHER_SUITE=NORMAL:SECURE256:-VERS-SSL3.0
-#      - LDAP_TLS_PROTOCOL_MIN=3.1
-#      - LDAP_TLS_VERIFY_CLIENT=try
-#      - LDAP_REPLICATION=false
-#      #- LDAP_REPLICATION_CONFIG_SYNCPROV=binddn="cn=admin,cn=config" bindmethod=simple credentials=$LDAP_CONFIG_PASSWORD searchbase="cn=config" type=refreshAndPersist retry="60 +" timeout=1 starttls=critical
-#      #- LDAP_REPLICATION_DB_SYNCPROV=binddn="cn=admin,$LDAP_BASE_DN" bindmethod=simple credentials=$LDAP_ADMIN_PASSWORD searchbase="$LDAP_BASE_DN" type=refreshAndPersist interval=00:00:00:10 retry="60 +" timeout=1 starttls=critical
-#      #- LDAP_REPLICATION_HOSTS=['ldaps://ldap.${DOMAIN}','ldaps://ldap2.${DOMAIN}']
-#      - KEEP_EXISTING_CONFIG=false
-#      - LDAP_REMOVE_CONFIG_AFTER_SETUP=true
-#      - LDAP_SSL_HELPER_PREFIX=ldap
-#    tty: true
-#    stdin_open: true
-#    command: --copy-service --loglevel warning
-#    volumes:
-#      - /srv/openldap/lib/ldap/:/var/lib/ldap
-#      - /srv/openldap/slapd.d/:/etc/ldap/slapd.d
-#      - /srv/openldap/ldif/:/srv/ldif
-#      - /etc/localtime:/etc/localtime:ro
-#      - /etc/timezone:/etc/timezone:ro
-#      - /etc/letsencrypt/live/intranet.${DOMAIN}:/container/service/slapd/assets/certs:ro
-#      - /etc/letsencrypt/archive/intranet.${DOMAIN}:/container/service/slapd/archive/intranet.${DOMAIN}:ro
-#      - ./services/openldap/ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom
-
-
-

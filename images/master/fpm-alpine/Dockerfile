@@ -2,19 +2,22 @@ FROM php:7.3-fpm-alpine
 
 # Add requirements and install application
 # Enable development php.ini config (Solve empty answer from token.php)
-# Not apt-get on alpine ; not same library
 RUN set -ex; \
-    apk add --update --no-cache \
-        libpq-dev \
-        libldap2-dev \
+    apk add --no-cache --update \
         git \
+        postgresql-client \
+        mariadb \
+        postgresql-dev \
+        openldap-dev \
+        libldap \
+        libpq \
         rsync \
     ; \
-    rm -rf /var/cache/apk/*; \
     docker-php-ext-configure pgsql --with-pgsql=/usr/local/pgsql; \
-    docker-php-ext-install pdo pdo_pgsql pgsql; \
-    docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu/; \
+    docker-php-ext-install mysqli pdo pdo_mysql pdo_pgsql pgsql; \
+    docker-php-ext-configure ldap; \
     docker-php-ext-install ldap; \
+    rm -rf /var/cache/apk/*; \
     ln -s /usr/local/etc/php/php.ini-production /usr/local/etc/php/php.ini;
 
 COPY ./entrypoint.sh /
@@ -33,13 +36,15 @@ ADD https://github.com/crivaledaz/Mattermost-LDAP/archive/${VERSION}.tar.gz /tmp
 # Decompress the tar.gz to the right location.
 # Keep track of image version
 RUN set -ex; \
-    mkdir -p /tmp/Mattermost-LDAP; \
-    tar zxvf /tmp/${VERSION}.tar.gz -C /tmp/Mattermost-LDAP; \
-    rm ${VERSION}.tar.gz; \
-    mkdir -p /opt/Mattermost-LDAP; \
-    cp -r "/tmp/Mattermost-LDAP/${VERSION}"/* /opt/Mattermost-LDAP; \
+    mkdir -p /tmp/Mattermost-LDAP/; \
+    tar zxvf /tmp/${VERSION}.tar.gz -C /tmp/Mattermost-LDAP/; \
+    rm -f /tmp/${VERSION}.tar.gz; \
+    mkdir -p /opt/Mattermost-LDAP/; \
+    cp -R "/tmp/Mattermost-LDAP/Mattermost-LDAP-${VERSION}"/* /opt/Mattermost-LDAP/; \
     rm -rf /tmp/Mattermost-LDAP; \
-    echo "${VERSION} ${VCS_REF} ${BUILD_DATE}" > '/opt/Mattermost-LDAP/oauth/.docker-version';
+    cp /opt/Mattermost-LDAP/db_init/config_init.sh.example /opt/Mattermost-LDAP/db_init/config_init.sh; \
+    rm /opt/Mattermost-LDAP/db_init/config_init.sh.example; \
+    echo "${VERSION} ${VCS_REF} ${BUILD_DATE}" > '/opt/Mattermost-LDAP/.docker-version';
 
 # Container labels (http://label-schema.org/)
 # Container annotations (https://github.com/opencontainers/image-spec)

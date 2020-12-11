@@ -13,7 +13,6 @@ RUN set -ex; \
         sudo \
     ; \
     rm -rf /var/lib/apt/lists/*; \
-    docker-php-ext-configure pgsql --with-pgsql=/usr/local/pgsql; \
     docker-php-ext-install mysqli pdo pdo_mysql pdo_pgsql pgsql; \
     docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu/; \
     docker-php-ext-install ldap; \
