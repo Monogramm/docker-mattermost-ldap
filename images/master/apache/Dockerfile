@@ -7,6 +7,7 @@ RUN set -ex; \
     apt-get install -y \
         git \
         default-mysql-client \
+        postgresql-client \
         libpq-dev \
         libldap2-dev \
         rsync \
