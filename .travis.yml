@@ -10,15 +10,23 @@ branches:
     - master
     - develop
 
-before_script:
+before_install:
   - env | sort
   - dir="images/${VERSION}/${VARIANT}"
   - export TAG=travis
   - export VCS_REF=`git rev-parse --short HEAD`
   - export BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"`
   - export IMAGE_NAME=docker-mattermost-ldap
-  - mkdir -p /srv/mattermost-ldap/html/
-  - chown -R 2000:2000 /srv/mattermost-ldap/
+
+install:
+  - cd "$dir"
+  # Test containers build
+  - docker-compose -f docker-compose.test.yml build
+
+before_script:
+  - docker images
+  - sudo mkdir -p /srv/mattermost-ldap/html/
+  - sudo chown -R 2000:2000 /srv/mattermost-ldap/
 
 script:
   - cd "$dir"
