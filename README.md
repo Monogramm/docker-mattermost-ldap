@@ -1,21 +1,3 @@
-<!--
-
-Template variables to replace in ALL files:
-* Mattermost-LDAP: Name of the application
-* Monogramm: GitHub Owner of the original application
-* mattermost-ldap: GitHub slug of the original application
-* MATTERMOST_LDAP: Uppercase value of the GitHub slug
-* Custome image for mattermost-ldap.: Application description
-* https://mattermost.com/: Application URL
-* Mattermost: Name of the Application vendor
-
-After replacing all variables:
-* Edit `update.sh` to edit how to retrieve the application latest versions and how to generate images
-* Edit `template/docker-compose_*.yml` to configure your Docker environment for CI
-* Edit `template/test` content for DockerHub custom tests
-
--->
-
 [![License: AGPL v3][uri_license_image]][uri_license]
 [![Docs](https://img.shields.io/badge/Docs-Github%20Pages-blue)](https://Monogramm.github.io/mattermost-ldap/)
 [![Build Status](https://travis-ci.org/Monogramm/docker-mattermost-ldap.svg)](https://travis-ci.org/Monogramm/docker-mattermost-ldap)
@@ -35,27 +17,25 @@ Docker image for **Mattermost-LDAP**.
 
 :whale: :elephant: Custome image for mattermost-ldap.
 
-> [**Mattermost-LDAP**](https://mattermost.com/)
+> [**Mattermost-LDAP**](https://github.com/Crivaledaz/Mattermost-LDAP)
+
+> [**Mattermost**](https://mattermost.com/)
 
 ## Supported tags
 
 [Dockerhub Monogramm/docker-mattermost-ldap](https://hub.docker.com/r/Monogramm/docker-mattermost-ldap/)
 
--   `alpine` `latest`
--   `debian`
+<!-- tags -->
+-   `apache` `latest`
+-   `fpm`
+-   `fpm-alpine`
+<!-- tags -->
 
 ## How to run this image
 
-<!--
-    If based on official images, refer to official doc:
+See **Mattermost-LDAP** documentation for details.
 
-See **Mattermost-LDAP** base image documentation for details.
-
-> [**Mattermost-LDAP** GitHub](https://github.com/Monogramm/mattermost-ldap)
-
-> [**Mattermost-LDAP** DockerHub](https://hub.docker.com/r/Monogramm/docker-mattermost-ldap-base/)
-
--->
+> [**Mattermost-LDAP** GitHub](https://github.com/Crivaledaz/Mattermost-LDAP)
 
 ## Questions / Issues
 

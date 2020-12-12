@@ -1,0 +1,208 @@
+version: "2.3"
+
+networks:
+  mattermost-ldap_internal_network:
+    internal: true
+  mattermost_internal_network:
+    internal: true
+  mattermost_external_network:
+
+services:
+  # https://docs.docker.com/docker-hub/builds/automated-testing/
+  sut:
+    build:
+      context: ./test
+      dockerfile: Dockerfile
+    depends_on:
+      mattermost-ldap-db:
+        condition: service_healthy
+      mattermost-ldap:
+        condition: service_started
+    networks:
+      - mattermost-ldap_internal_network
+    volumes_from:
+      - mattermost-ldap
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+
+  mattermost-ldap:
+    # For development or CI, tag build from local Dockerfile
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args: 
+        - TAG=${TAG}
+        - VCS_REF=${VCS_REF}
+        - BUILD_DATE=${BUILD_DATE}
+    # For production, download prebuilt image
+    #image: ${IMAGE_NAME}
+    container_name: mattermost-ldap
+    hostname: mattermost
+    domainname: ${DOMAIN}
+    #restart: always
+    depends_on:
+      mattermost-ldap-db:
+        condition: service_healthy
+    links:
+      - mattermost-ldap-db
+    ports:
+      - "8080:80"
+      - "8443:443"
+    networks:
+      - mattermost-ldap_internal_network
+      - mattermost_external_network
+    environment:
+      - client_id=${MATTERMOST_GITLABSETTINGS_ID}
+      - client_secret=${MATTERMOST_GITLABSETTINGS_SECRET}
+      - redirect_uri=${MATTERMOST_SITE_URL}/signup/gitlab/complete
+      - grant_types=${GRANT_TYPES}
+      - scope=${SCOPE}
+      - ldap_host=$LDAP_HOST
+      - ldap_port=$LDAP_PORT
+      - ldap_version=$LDAP_VERSION
+      - ldap_start_tls=$LDAP_START_TLS
+      - ldap_search_attribute=$LDAP_SEARCH_ATTRIBUTE
+      - ldap_base_dn=$LDAP_BASE_DN
+      - ldap_filter=$LDAP_FILTER
+      - ldap_bind_dn=$LDAP_BIND_DN
+      - ldap_bind_pass=$LDAP_BIND_PASS
+      - db_host=mattermost-ldap-db
+      - db_port=3306
+      - db_type=mysql
+      - db_name=$DB_NAME
+      - db_user=$DB_USER
+      - db_pass=$DB_PASS
+    volumes:
+      - ${MATTERMOST_LDAP_HOME}/html:/var/www/html
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+
+# Use mariadb for debian
+  mattermost-ldap-db:
+    image: mariadb:latest
+    container_name: mattermost-ldap-db
+    #restart: always
+    command: --character_set_client=utf8 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --character-set-client-handshake=FALSE
+    networks:
+      - mattermost-ldap_internal_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "--password=${DB_ROOT_PASSWD}","ping", "-h", "localhost"]
+      timeout: 10s
+      retries: 5
+    expose:
+      - '3306'
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWD}
+      - MYSQL_DATABASE=${DB_NAME}
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PASSWORD=${DB_PASS}
+    volumes:
+      - ${MATTERMOST_LDAP_HOME}/db/mysql:/var/lib/mysql
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+
+  # Use official mattermost-prod-db image.
+  mattermostdb:
+    image: mattermost/mattermost-prod-db:5.28.1
+    container_name: mattermostdb
+    networks:
+      - mattermost_internal_network
+    #restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${MATTERMOST_DB_USER}"]
+    expose:
+      - '5432'
+    environment:
+      - POSTGRES_DB=${MATTERMOST_DB_NAME}
+      - POSTGRES_USER=${MATTERMOST_DB_USER}
+      - POSTGRES_PASSWORD=${MATTERMOST_DB_PWD}
+      # uncomment the following to enable backup
+      #- AWS_ACCESS_KEY_ID=XXXX
+      #- AWS_SECRET_ACCESS_KEY=XXXX
+      #- WALE_S3_PREFIX=s3://BUCKET_NAME/PATH
+      #- AWS_REGION=us-east-1
+    volumes:
+      - ${MATTERMOST_LDAP_HOME}/mattermost/pgsql/data:/var/lib/postgresql/data
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+
+  # Use official mattermost image
+  mattermost:
+    image: mattermost/mattermost-team-edition:5.28.1
+    container_name: mattermost
+    hostname: mattermost
+    domainname: ${DOMAIN}
+    networks:
+      - mattermost_external_network
+      - mattermost_internal_network
+    #restart: unless-stopped
+    depends_on:
+      mattermostdb:
+        condition: service_healthy
+    ports:
+      - "8065:8065"
+    environment:
+      # set same as db credentials and dbname
+      - DB_HOST=mattermostdb
+      - DB_PORT_NUMBER=5432
+      # set same as db credentials and dbname
+      - MM_DBNAME=${MATTERMOST_DB_NAME}
+      - MM_USERNAME=${MATTERMOST_DB_USER}
+      - MM_PASSWORD=${MATTERMOST_DB_PWD}
+      # Mattermost config file documentation : https://docs.mattermost.com/administration/config-settings.html
+      # SQL Settings
+      - MM_SQLSETTINGS_DRIVERNAME=postgres
+      - MM_SQLSETTINGS_DATASOURCE=postgres://${MATTERMOST_DB_USER}:${MATTERMOST_DB_PWD}@mattermostdb:5432/${MATTERMOST_DB_NAME}?sslmode=disable&connect_timeout=10
+      # Service Settings
+      - MM_SERVICESETTINGS_SITEURL=${MATTERMOST_SITE_URL}
+      - MM_SERVICESETTINGS_ENABLEOAUTHSERVICEPROVIDER=true
+      # Team Settings
+      - MM_TEAMSETTINGS_SITENAME=${COMPANY_NAME} - Mattermost
+      - MM_TEAMSETTINGS_ENABLEOPENSERVER=true
+      # Log Settings
+      - MM_LOGSETTINGS_CONSOLELEVEL=INFO
+      # Email Settings
+      - MM_EMAILSETTINGS_SMTPUSERNAME=${MATTERMOST_SMTP_USER}
+      - MM_EMAILSETTINGS_SMTPPASSWORD=${MATTERMOST_SMTP_PWD}
+      - MM_EMAILSETTINGS_SMTPSERVER=mailer
+      - MM_EMAILSETTINGS_SMTPPORT=1025
+      # GitLab Settings
+      - MM_GITLABSETTINGS_ENABLE=true
+      - MM_GITLABSETTINGS_SECRET=${MATTERMOST_GITLABSETTINGS_SECRET}
+      - MM_GITLABSETTINGS_ID=${MATTERMOST_GITLABSETTINGS_ID}
+      - MM_GITLABSETTINGS_AUTHENDPOINT=${MATTERMOSTLDAP_SITE_URL}/oauth/authorize.php
+      - MM_GITLABSETTINGS_TOKENENDPOINT=${MATTERMOSTLDAP_SITE_URL}/oauth/token.php
+      - MM_GITLABSETTINGS_USERAPIENDPOINT=${MATTERMOSTLDAP_SITE_URL}/oauth/resource.php
+    volumes:
+      #- ${MATTERMOST_LDAP_HOME}/mattermost/app/config:/mattermost/config
+      #- ${MATTERMOST_LDAP_HOME}/mattermost/app/data:/mattermost/data
+      #- ${MATTERMOST_LDAP_HOME}/mattermost/app/logs:/mattermost/logs
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+
+  mailer:
+    image: sj26/mailcatcher:latest
+    hostname: mailer
+    container_name: mailer
+    restart: always
+    expose:
+      - 1025
+    ports:
+      - "1080:1080"
+    networks:
+      - mattermost_internal_network
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+  
+  ldap:
+    container_name: ldap
+    image: rroemhild/test-openldap:latest
+    networks:
+      - mattermost-ldap_internal_network
+    ports:
+        - '389:389'
+        - '636:636'
+  #  volumes:
+  #    - ${MATTERMOST_LDAP_HOME}/openldap:/var/lib/ldap/

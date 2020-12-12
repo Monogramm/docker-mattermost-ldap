@@ -1,4 +1,4 @@
-FROM php:7.3-apache
+FROM php:7.3-fpm
 
 # Add requirements and install application
 # Enable development php.ini config (Solve empty answer from token.php)
@@ -24,12 +24,12 @@ ENV timezone=Etc/UTC
 COPY ./entrypoint.sh /
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["start", "apache2-foreground"]
+CMD ["start", "php-fpm"]
 
 # Arguments to label built container
 ARG VCS_REF
 ARG BUILD_DATE
-ARG VERSION=master
+ARG VERSION=2.0
 
 # Get Mattermost-LDAP project
 ADD https://github.com/crivaledaz/Mattermost-LDAP/archive/${VERSION}.tar.gz /tmp/${VERSION}.tar.gz

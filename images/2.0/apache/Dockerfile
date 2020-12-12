@@ -29,7 +29,7 @@ CMD ["start", "apache2-foreground"]
 # Arguments to label built container
 ARG VCS_REF
 ARG BUILD_DATE
-ARG VERSION=master
+ARG VERSION=2.0
 
 # Get Mattermost-LDAP project
 ADD https://github.com/crivaledaz/Mattermost-LDAP/archive/${VERSION}.tar.gz /tmp/${VERSION}.tar.gz

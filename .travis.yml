@@ -49,6 +49,9 @@ notifications:
   email: false
 
 env: # Environments
+    - VERSION=2.0 VARIANT=fpm-alpine
+    - VERSION=2.0 VARIANT=fpm
+    - VERSION=2.0 VARIANT=apache
     - VERSION=master VARIANT=fpm-alpine
     - VERSION=master VARIANT=fpm
     - VERSION=master VARIANT=apache

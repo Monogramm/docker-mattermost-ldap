@@ -96,78 +96,100 @@ wait_for_services() {
 }
 
 # init / update application
+init_config() {
+    # Get config file and remove templates
+    if [ -f "./oauth/config_db.php.example" ]; then
+        rsync -lDog ./oauth/config_db.php.example ./oauth/config_db.php
+        rm ./oauth/config_db.php.example
+    fi
+    if [ -f "./oauth/LDAP/config_ldap.php.example" ]; then
+        rsync -lDog ./oauth/LDAP/config_ldap.php.example ./oauth/LDAP/config_ldap.php
+        rm ./oauth/LDAP/config_ldap.php.example
+    fi
+
+    if [ -z "${timezone}" ]; then
+        log "Update the timezone configuration..."
+        sed -i \
+            -e "s|//date_default_timezone_set \('.*'\);|date_default_timezone_set \('${timezone}'\);|g" \
+            ./oauth/config_db.php
+    fi
+}
+
+install_db() {
+
+    if [ -z "${db_type}" ]; then
+        log "No database type specified for initialization!"
+        exit 1
+    elif [ "${db_type}" = "mysql" ]; then
+
+        if [ -x /opt/Mattermost-LDAP/db_init/init_mysql.sh ]; then
+            # [TODO] Use a .sql script
+            log "Preparing database initialization for ${db_type}..."
+            sed -i \
+                -e "s|source config_init\.sh|source \/opt\/Mattermost-LDAP\/db_init\/config_init\.sh|g" \
+                -e "s|mysql_pass=\"\"|mysql_pass=\"\${DB_ROOT_PASSWD}\"|g" \
+                -e "s|sudo mysql -u root --password=\$mysql_pass --execute|sudo mysql -u root --password=\$mysql_pass -h \$db_host --port=\$db_port --execute|g" \
+                -e "s|mysql -u \$db_user --password=\$db_pass \$db_name --execute|mysql -u \$db_user --password=\$db_pass -h \$db_host --port=\$db_port \$db_name --execute|g" \
+                /opt/Mattermost-LDAP/db_init/init_mysql.sh
+
+            log "Init the ${db_type} database..."
+            /opt/Mattermost-LDAP/db_init/init_mysql.sh
+        else
+            log "No database initialization script for ${db_type}!"
+            exit
+        fi
+
+    elif [ "${db_type}" = "pgsql" ]; then
+
+        if [ -x /opt/Mattermost-LDAP/db_init/init_postgres.sh ]; then
+            # [TODO] Use a .sql script
+            log "Preparing database initialization for ${db_type}..."
+            sed -i \
+                -e "s|#!\/bin\/bash|#!\/bin\/sh|g" \
+                -e "s|source config_init\.sh|source \/opt\/Mattermost-LDAP\/db_init\/config_init\.sh|g" \
+                -e "s|psql -U postgres -c|#psql -h \$db_host -p \$db_port -U postgres -c|g" \
+                -e "s|psql -U \$db_user -d \$db_name -c|PGPASSWORD=\$db_pass psql -U \$db_user -d \$db_name -h \$db_host -p \$db_port -c|g" \
+                /opt/Mattermost-LDAP/db_init/init_postgres.sh
+
+            log "Init the ${db_type} database..."
+            /opt/Mattermost-LDAP/db_init/init_postgres.sh
+        else
+            log "No database initialization script for ${db_type}!"
+            exit
+        fi
+
+    else
+        log "${db_type} is not an accepted value for database."
+        exit 1
+    fi
+
+}
+
+update_db() {
+    # [TODO] Implement update script for database
+    log "Mattermost-LDAP database update not yet implemented!"
+}
+
 init() {
     # Check version
     if [ ! -f "./.docker-version" ]; then
         log "Mattermost-LDAP init to $(cat /opt/Mattermost-LDAP/.docker-version)..."
+
         # Install server Oauth
-        cp -r /opt/Mattermost-LDAP/oauth/ /var/www/html/
-        # Get config file
-        cp /var/www/html/oauth/config_db.php.example /var/www/html/oauth/config_db.php
-        cp /var/www/html/oauth/LDAP/config_ldap.php.example /var/www/html/oauth/LDAP/config_ldap.php
-        log "echo ${VERSION} ${VCS_REF} ${BUILD_DATE} to docker-version file"
-        echo "${VERSION} ${VCS_REF} ${BUILD_DATE}" > "/opt/Mattermost-LDAP/.docker-version"
+        cp -r /opt/Mattermost-LDAP/oauth/ ./
 
-        rm /var/www/html/oauth/config_db.php.example /var/www/html/oauth/LDAP/config_ldap.php.example
+        init_config
+        install_db
 
-        log "Update the config_db.php file..."
-        sed -i \
-            -e "s|\/\/date_default_timezone_set \(\'Europe/Paris\'\);|date_default_timezone_set \(\'TIMEZONE\'\);|g" \
-            /var/www/html/oauth/config_db.php
-
-        log "Update the init database files..."
-        if [ -z ${db_type} ]; then
-            log "No database detected for initialisation."
-            exit
-        elif [ "${db_type}" = "mysql" ]; then
-            if [ -x /opt/Mattermost-LDAP/db_init/init_mysql.sh ]; then
-                # [TODO] Use a .sql script
-                sed -i \
-                    -e "s|source config_init\.sh|source \/opt\/Mattermost-LDAP\/db_init\/config_init\.sh|g" \
-                    -e "s|mysql_pass=\"\"|mysql_pass=\"\${DB_ROOT_PASSWD}\"|g" \
-                    -e "s|sudo mysql -u root --password=\$mysql_pass --execute|sudo mysql -u root --password=\$mysql_pass -h \$db_host --port=\$db_port --execute|g" \
-                    -e "s|mysql -u \$db_user --password=\$db_pass \$db_name --execute|mysql -u \$db_user --password=\$db_pass -h \$db_host --port=\$db_port \$db_name --execute|g" \
-                    /opt/Mattermost-LDAP/db_init/init_mysql.sh
-            fi
-        elif [ "${db_type}" = "pgsql" ]; then
-            if [ -x /opt/Mattermost-LDAP/db_init/init_postgres.sh ]; then
-                # [TODO] Use a .sql script
-                sed -i \
-                    -e "s|#!\/bin\/bash|#!\/bin\/sh|g" \
-                    -e "s|source config_init\.sh|source \/opt\/Mattermost-LDAP\/db_init\/config_init\.sh|g" \
-                    -e "s|psql -U postgres -c|#psql -h \$db_host -p \$db_port -U postgres -c|g" \
-                    -e "s|psql -U \$db_user -d \$db_name -c|PGPASSWORD=\$db_pass psql -U \$db_user -d \$db_name -h \$db_host -p \$db_port -c|g" \
-                    /opt/Mattermost-LDAP/db_init/init_postgres.sh
-            fi
-        else
-            log "${db_type} is not an accepted value for database."
-            exit
-        fi
-
-        log "Init the database..."
-        if [ "${db_type}" = "mysql" ]; then
-            /opt/Mattermost-LDAP/db_init/init_mysql.sh
-        elif [ "${db_type}" = "pgsql" ]; then
-            /opt/Mattermost-LDAP/db_init/init_postgres.sh
-        else
-            log "${db_type} is not an accepted value for database."
-            exit
-        fi
     elif ! cmp -s "./.docker-version" "/opt/Mattermost-LDAP/.docker-version"; then
         log "Mattermost-LDAP update from $(cat ./.docker-version) to $(cat /opt/Mattermost-LDAP/.docker-version)..."
-        # Install server Oauth
-        rsync -rlDog --exclude="/etc/nginx/conf.d/default.conf" /opt/Mattermost-LDAP/oauth/ /var/www/html/
-        # Get config file
-        if [ -f "/var/www/html/oauth/config_db.php.example" ]; then
-            rsync -lDog /var/www/html/oauth/config_db.php.example /var/www/html/oauth/config_db.php
-            rm /var/www/html/oauth/config_db.php.example
-        fi
-        if [ -f "/var/www/html/oauth/LDAP/config_ldap.php.example" ]; then
-            rsync -lDog /var/www/html/oauth/LDAP/config_ldap.php.example /var/www/html/oauth/LDAP/config_ldap.php
-            rm /var/www/html/oauth/LDAP/config_ldap.php.example
-        fi
-            
-        # [TODO] Implement update script for database
+
+        # Update server Oauth
+        rsync -rlDog /opt/Mattermost-LDAP/oauth/ ./
+
+        init_config
+        update_db
+
     fi
 
     cp -p "/opt/Mattermost-LDAP/.docker-version" "./.docker-version"
@@ -202,7 +224,7 @@ Options:
 case "${1}" in
 # Management tasks
 "--help") print_help ;;
-    # Service tasks
+# Service tasks
 "start") start "$2" ;;
 *) exec "$@" ;;
 esac

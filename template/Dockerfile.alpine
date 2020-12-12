@@ -20,6 +20,8 @@ RUN set -ex; \
     rm -rf /var/cache/apk/*; \
     ln -s /usr/local/etc/php/php.ini-production /usr/local/etc/php/php.ini;
 
+ENV timezone=Etc/UTC
+
 COPY ./entrypoint.sh /
 
 ENTRYPOINT ["/entrypoint.sh"]
@@ -56,8 +58,8 @@ LABEL maintainer="Monogramm maintainers <opensource at Monogramm dot io>" \
       org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.name="Mattermost-LDAP" \
       org.label-schema.description="Custom image for mattermost-ldap." \
-      org.label-schema.url="https://mattermost.com/" \
-      org.label-schema.vendor="Mattermost" \
+      org.label-schema.url="https://github.com/Crivaledaz/Mattermost-LDAP" \
+      org.label-schema.vendor="Crivaledaz" \
       org.label-schema.version=$VERSION \
       org.label-schema.schema-version="1.0" \
       org.opencontainers.image.revision=$VCS_REF \
@@ -65,7 +67,7 @@ LABEL maintainer="Monogramm maintainers <opensource at Monogramm dot io>" \
       org.opencontainers.image.created=$BUILD_DATE \
       org.opencontainers.image.title="Mattermost-LDAP" \
       org.opencontainers.image.description="Custom image for mattermost-ldap." \
-      org.opencontainers.image.url="https://mattermost.com/" \
-      org.opencontainers.image.vendor="Mattermost" \
+      org.opencontainers.image.url="https://github.com/Crivaledaz/Mattermost-LDAP" \
+      org.opencontainers.image.vendor="Crivaledaz" \
       org.opencontainers.image.version=$VERSION \
       org.opencontainers.image.authors="Monogramm maintainers <opensource at Monogramm dot io>"

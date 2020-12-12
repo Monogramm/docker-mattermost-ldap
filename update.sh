@@ -25,7 +25,7 @@ variants=(
 	fpm-alpine
 )
 
-min_version='1.0'
+min_version='2.0'
 
 
 # version_greater_or_equal A B returns whether A >= B
@@ -35,10 +35,10 @@ function version_greater_or_equal() {
 
 dockerRepo="monogramm/docker-mattermost-ldap"
 # Retrieve automatically the latest versions
-#latests=( $( curl -fsSL 'https://api.github.com/repos/Monogramm/mattermost-ldap/tags' |tac|tac| \
-#	grep -oE '[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' | \
-#	sort -urV ) )
-latests=( master )
+latests=( master
+	$( curl -fsSL 'https://api.github.com/repos/Crivaledaz/Mattermost-LDAP/tags' |tac|tac| \
+	grep -oE '[[:digit:]]+\.[[:digit:]]+' | \
+	sort -urV ) )
 
 # Remove existing images
 echo "reset docker images"
@@ -79,6 +79,13 @@ for latest in "${latests[@]}"; do
 				s/%%VERSION%%/'"$latest"'/g;
 				s/%%CMD%%/'"${cmd[$variant]}"'/g;
 			' "$dir/Dockerfile"
+
+			# Create a list of "alias" tags for DockerHub post_push
+			if [ "$latest" = 'master' ]; then
+				echo "$variant " > "$dir/.dockertags"
+			else
+				echo "$latest-$variant " > "$dir/.dockertags"
+			fi
 
 			# Add Travis-CI env var
 			travisEnv='\n    - VERSION='"$version"' VARIANT='"$variant$travisEnv"

@@ -1,22 +1,23 @@
-FROM php:7.3-apache
+FROM php:7.3-fpm-alpine
 
 # Add requirements and install application
 # Enable development php.ini config (Solve empty answer from token.php)
 RUN set -ex; \
-    apt-get update; \
-    apt-get install -y \
+    apk add --no-cache --update \
         git \
-        default-mysql-client \
         postgresql-client \
-        libpq-dev \
-        libldap2-dev \
+        mariadb \
+        postgresql-dev \
+        openldap-dev \
+        libldap \
+        libpq \
         rsync \
-        sudo \
     ; \
-    rm -rf /var/lib/apt/lists/*; \
+    docker-php-ext-configure pgsql --with-pgsql=/usr/local/pgsql; \
     docker-php-ext-install mysqli pdo pdo_mysql pdo_pgsql pgsql; \
-    docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu/; \
+    docker-php-ext-configure ldap; \
     docker-php-ext-install ldap; \
+    rm -rf /var/cache/apk/*; \
     ln -s /usr/local/etc/php/php.ini-production /usr/local/etc/php/php.ini;
 
 ENV timezone=Etc/UTC
@@ -24,12 +25,12 @@ ENV timezone=Etc/UTC
 COPY ./entrypoint.sh /
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["start", "apache2-foreground"]
+CMD ["start", "php-fpm"]
 
 # Arguments to label built container
 ARG VCS_REF
 ARG BUILD_DATE
-ARG VERSION=master
+ARG VERSION=2.0
 
 # Get Mattermost-LDAP project
 ADD https://github.com/crivaledaz/Mattermost-LDAP/archive/${VERSION}.tar.gz /tmp/${VERSION}.tar.gz
