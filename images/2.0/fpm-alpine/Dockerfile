@@ -30,7 +30,7 @@ CMD ["start", "php-fpm"]
 # Arguments to label built container
 ARG VCS_REF
 ARG BUILD_DATE
-ARG VERSION=2.0
+ARG VERSION=v2.0
 
 # Get Mattermost-LDAP project
 ADD https://github.com/crivaledaz/Mattermost-LDAP/archive/${VERSION}.tar.gz /tmp/${VERSION}.tar.gz

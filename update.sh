@@ -74,11 +74,19 @@ for latest in "${latests[@]}"; do
 			cp "template/nginx.conf" "$dir/nginx.conf"
 
 			# Replace the variables.
-			sed -ri -e '
-				s/%%VARIANT%%/-'"$variant"'/g;
-				s/%%VERSION%%/'"$latest"'/g;
-				s/%%CMD%%/'"${cmd[$variant]}"'/g;
-			' "$dir/Dockerfile"
+			if [[ "$latest" == 'master' ]]; then
+				sed -ri -e '
+					s/%%VARIANT%%/-'"$variant"'/g;
+					s/%%VERSION%%/'"$latest"'/g;
+					s/%%CMD%%/'"${cmd[$variant]}"'/g;
+				' "$dir/Dockerfile"
+			else
+				sed -ri -e '
+					s/%%VARIANT%%/-'"$variant"'/g;
+					s/%%VERSION%%/v'"$latest"'/g;
+					s/%%CMD%%/'"${cmd[$variant]}"'/g;
+				' "$dir/Dockerfile"
+			fi
 
 			# Create a list of "alias" tags for DockerHub post_push
 			if [ "$latest" = 'master' ]; then
