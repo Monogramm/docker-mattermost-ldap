@@ -1,8 +1,8 @@
 [![License: AGPL v3][uri_license_image]][uri_license]
 [![Docs](https://img.shields.io/badge/Docs-Github%20Pages-blue)](https://Monogramm.github.io/mattermost-ldap/)
 [![Build Status](https://travis-ci.org/Monogramm/docker-mattermost-ldap.svg)](https://travis-ci.org/Monogramm/docker-mattermost-ldap)
-[![Docker Automated buid](https://img.shields.io/docker/cloud/build/Monogramm/docker-mattermost-ldap.svg)](https://hub.docker.com/r/Monogramm/docker-mattermost-ldap/)
-[![Docker Pulls](https://img.shields.io/docker/pulls/Monogramm/docker-mattermost-ldap.svg)](https://hub.docker.com/r/Monogramm/docker-mattermost-ldap/)
+[![Docker Automated buid](https://img.shields.io/docker/cloud/build/Monogramm/docker-mattermost-ldap.svg)](https://hub.docker.com/r/monogramm/docker-mattermost-ldap)
+[![Docker Pulls](https://img.shields.io/docker/pulls/Monogramm/docker-mattermost-ldap.svg)](https://hub.docker.com/r/monogramm/docker-mattermost-ldap)
 [![Docker Version](https://images.microbadger.com/badges/version/Monogramm/docker-mattermost-ldap.svg)](https://microbadger.com/images/Monogramm/docker-mattermost-ldap)
 [![Docker Size](https://images.microbadger.com/badges/image/Monogramm/docker-mattermost-ldap.svg)](https://microbadger.com/images/Monogramm/docker-mattermost-ldap)
 [![GitHub stars](https://img.shields.io/github/stars/Monogramm/docker-mattermost-ldap?style=social)](https://github.com/Monogramm/docker-mattermost-ldap)
@@ -23,7 +23,7 @@ Docker image for **Mattermost-LDAP**.
 
 ## Supported tags
 
-[Dockerhub Monogramm/docker-mattermost-ldap](https://hub.docker.com/r/Monogramm/docker-mattermost-ldap/)
+[Dockerhub Monogramm/docker-mattermost-ldap](https://hub.docker.com/r/monogramm/docker-mattermost-ldap)
 
 <!-- tags -->
 -   `apache` `latest`
