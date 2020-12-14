@@ -136,7 +136,7 @@ install_db() {
             /opt/Mattermost-LDAP/db_init/init_mysql.sh
         else
             log "No database initialization script for ${db_type}!"
-            exit
+            exit 1
         fi
 
     elif [ "${db_type}" = "pgsql" ]; then
@@ -155,7 +155,7 @@ install_db() {
             /opt/Mattermost-LDAP/db_init/init_postgres.sh
         else
             log "No database initialization script for ${db_type}!"
-            exit
+            exit 1
         fi
 
     else
