@@ -12,7 +12,7 @@ branches:
 
 before_install:
   - env | sort
-  - dir="images/${VERSION}/${VARIANT}"
+  - dir="$(pwd)/images/${VERSION}/${VARIANT}"
   - export TAG=travis
   - export VCS_REF=`git rev-parse --short HEAD`
   - export BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"`
