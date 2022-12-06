@@ -1,4 +1,4 @@
-FROM debian
+FROM debian:11.5
 # If based on official images
 # FROM __app_owner_slug__/__app_slug__:debian
 
